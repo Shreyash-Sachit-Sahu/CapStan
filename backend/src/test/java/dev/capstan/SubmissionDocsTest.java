@@ -2,6 +2,8 @@ package dev.capstan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -89,6 +91,65 @@ class SubmissionDocsTest {
         assertThat(demo).contains("<TAMPER_EVENT_ID>");
     }
 
+
+    /**
+     * The one-pager is the artifact that gets forwarded to someone who was never
+     * in the room, so it is the one document nobody will notice has gone stale.
+     * Re-run the sweep, update the README, forget this file, and a wrong number
+     * travels further than any other number we publish.
+     *
+     * <p>So its load-bearing figures are checked against the committed report
+     * rather than against themselves.
+     */
+    @Test
+    void theOnePagerAgreesWithTheCommittedReport() throws IOException {
+        String page = read(Path.of("..", "docs", "onepager.html"));
+        JsonNode r = new ObjectMapper().readTree(
+                Files.readString(Path.of("..", "docs", "report_holdout.json"),
+                        StandardCharsets.UTF_8));
+
+        JsonNode median = r.path("sweep").path("median");
+        JsonNode iqr = r.path("sweep").path("iqr");
+        JsonNode budget = r.path("equalBudget");
+        JsonNode ablation = r.path("ablations");
+
+        record Figure(String rendered, String source) {
+        }
+        List<Figure> figures = List.of(
+                new Figure(pct1(median.path("baseline")), "sweep median baseline"),
+                new Figure(pct1(median.path("capstan")), "sweep median capstan"),
+                new Figure(pct1(median.path("upperBound")), "sweep median ceiling"),
+                new Figure(pp(iqr.path("baseline")), "sweep IQR baseline"),
+                new Figure(pp(iqr.path("capstan")), "sweep IQR capstan"),
+                new Figure(pct2(budget.path("3").path("arms").path("baseline")
+                        .path("recoveryRatePaise")), "equal budget 3, baseline"),
+                new Figure(pct2(budget.path("3").path("arms").path("capstan")
+                        .path("recoveryRatePaise")), "equal budget 3, capstan"),
+                new Figure(pct2(ablation.path("runs").path("payday-window timing")
+                        .path("recoveryRatePaise")), "payday ablation — the inversion line"),
+                new Figure(ablation.path("attributionPp").path("over-cap substitution")
+                        .asDouble() * -1 + "pp", "over-cap substitution, the 4.36pp we forgo"));
+
+        for (Figure f : figures) {
+            assertThat(page)
+                    .as("docs/onepager.html no longer carries '%s' (%s) — the one-pager "
+                            + "is what gets forwarded, so it must not outlive the report "
+                            + "it quotes", f.rendered(), f.source())
+                    .contains(f.rendered());
+        }
+    }
+
+    private static String pct1(JsonNode rate) {
+        return String.format("%.1f%%", rate.asDouble() * 100);
+    }
+
+    private static String pct2(JsonNode rate) {
+        return String.format("%.2f%%", rate.asDouble() * 100);
+    }
+
+    private static String pp(JsonNode rate) {
+        return String.format("%.2fpp", rate.asDouble() * 100);
+    }
     private static String read(Path path) throws IOException {
         assertThat(Files.exists(path))
                 .as("%s not found from %s — the scan would pass vacuously",

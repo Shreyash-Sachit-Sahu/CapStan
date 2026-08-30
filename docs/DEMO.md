@@ -213,10 +213,13 @@ Same oracle for both arms, package-isolated from the agent with a source-scannin
 test that fails the build if the agent names it. Ceiling published. Misses
 published in full. Ten seeds with IQR, not one lucky run.
 
-And the audit section documents every measurement error we found, including that
-all of them had been depressing Capstan rather than the baseline — so fixing them
-helped us, and we say so instead of claiming credit for it. The corrections that
-did cost us are listed separately, with what each one cost.
+And the audit section documents every measurement error we found, including the
+fact that all of them had been depressing Capstan rather than the baseline. We
+don't claim that as integrity — it has a structural cause. The baseline is three
+in-memory maps and a relative offset; it reads five immutable columns and holds
+no state worth corrupting, so there was no symmetric bug available for us to
+find. The corrections that genuinely cost us are listed separately, with what
+each one cost.
 
 **"What's actually AI here versus rules?"**
 Diagnosis only, and only the part rules cannot reach. Tier 1 is a deterministic
@@ -285,10 +288,15 @@ was measured, with a predicted direction, in `docs/decisions/`. The largest one
 removed 10.58 points from the **baseline** — it had been treating a generic
 dunning SMS as a completed mandate re-authorisation, which is false in any
 payment system. The test we applied each time was *would we make this change if
-it hurt us* — and honestly, none of those three did. Every measurement error we
-found had been depressing Capstan, so fixing it returned points to us; the
-arrival-bound bug alone was worth about 22. The evidence for that test is
-elsewhere: a holdout vocabulary our rules had never seen, at three points of
-reported accuracy; a simulator bias left uncorrected because correcting it would
-help us; a limitation worth 4.4 points we chose to state rather than model; and a
-cost model we refused because it would flip the ranking our way.
+it hurt us* — and honestly, none of those three did.
+
+Every measurement error we found had been depressing Capstan, so fixing it
+returned points to us; the arrival-bound bug alone was worth about 22. That is
+not luck and it is not virtue — the baseline computes its due time relative to
+each case's own failure timestamp and keeps no state between runs, so a wrong
+absolute clock or a leaked column cannot reach it. Two of our three bugs were
+exactly those. The evidence for the test is therefore elsewhere: a holdout
+vocabulary our rules had never seen, at three points of reported accuracy; a
+simulator bias left uncorrected because correcting it would help us; a limitation
+worth 4.4 points we chose to state rather than model; and a cost model we refused
+because it would flip the ranking our way.

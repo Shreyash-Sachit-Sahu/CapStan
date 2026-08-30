@@ -26,6 +26,9 @@ Median delta **+12.51pp**, range +3.34 to +18.63, ahead on **10 of 10 seeds**.
 Raw output: [`docs/report_holdout.json`](docs/report_holdout.json),
 [`docs/report_diagnosis_holdout.json`](docs/report_diagnosis_holdout.json),
 [`docs/report_exceptions_holdout.json`](docs/report_exceptions_holdout.json).
+One page for forwarding: [`docs/onepager.html`](docs/onepager.html) — open it and
+print to PDF. Its figures are asserted against the report above by
+`SubmissionDocsTest`, so it cannot quietly outlive a re-run.
 
 ### Per attempt, which is the comparison that isolates policy from volume
 
@@ -70,10 +73,10 @@ both are zero. They are rendered hatched in the cockpit and we do not claim them
 
 ## What we got wrong, and how we know
 
-Ordered by what each error cost, largest first. Every bug we found happened to
-run in our favour once fixed — that is stated plainly below rather than dressed
-up, and the decisions that genuinely went against our own interest are tabulated
-separately.
+Ordered by what each error cost, largest first. Every bug we found had been
+depressing our own numbers, which has a structural cause rather than a virtuous
+one; that is worked through below, and the decisions that genuinely went against
+our own interest are tabulated separately from it.
 
 ### The baseline was being handed a quarter of the money (−10.58pp, to them)
 
@@ -101,13 +104,39 @@ We fixed it knowing it would help us, on the test *would we fix this if it hurt
 us*. That test is worth nothing unless something backs it, so here is the honest
 accounting — and this correction is not the evidence.
 
-**Every measurement error we found happened to run in our favour once fixed.**
-Two harness bugs — cases being decided before they had failed, and the issuer
-circuit breaker contaminated across batches — were *depressing* Capstan by
-roughly 22 and 28 points respectively. Fixing them returned that to us. A third,
-a run-to-run state leak, was worth about 0.7pp, also to us. We are not going to
-present any of those as sacrifices; they were bugs that happened to be expensive
-for the arm that found them.
+**All three measurement errors we found had been depressing Capstan, not the
+baseline.** Three independent errors pointing the same way are not three
+coincidences, and they are not evidence of good faith either. They have a
+structural cause, and it is checkable in about thirty lines of
+[`FixedLadderBaseline`](backend/src/main/java/dev/capstan/backtest/FixedLadderBaseline.java).
+
+That class holds three in-memory maps keyed by case id, cleared at the top of
+every run, and computes each due time as `first_failed_at + {1,3,5}d`. It reads
+five columns, all of them immutable fixture data. It has no absolute-calendar
+dependence, no cross-case state, no cross-batch state, no guardrails and no
+diagnosis. Capstan has every one of those. So the surface on which a state bug
+can produce a wrong answer belongs almost entirely to one arm:
+
+| bug | what it corrupted | cost, to us | why the baseline was immune |
+|---|---|---:|---|
+| Cases decided before they had failed | the absolute clock the payday window reads | ~22pp | its ladder is relative to each case's own `first_failed_at`, so a window opening too early cannot make it act early |
+| Issuer breaker counting attempts across batches | `recentAttemptsSameReason()`, read only by G11 | ~28pp | it has no guardrails |
+| Re-auth columns surviving the run reset | `reauth_completed_at`, read only by G12 | ~0.7pp | it has no re-authorisation concept |
+
+The honest reading is the uncomfortable one. There was no symmetric bug available
+to find: we could not have discovered a harness error that flattered us, because
+the arm that would have had to carry it holds almost no state. A one-way error
+distribution is what comparing a stateful system against a stateless one
+predicts, so *"every bug we found ran against us"* is worth very little as
+evidence and we are not going to spend it as though it were.
+
+It does say something else, though, which is worth more than the virtue would
+have been: our lead is concentrated in exactly the machinery that broke. Payday
+timing alone is worth more than the whole gap, and two of the three bugs landed
+on timing and guardrail state. A system whose advantage comes from reading state
+is a system whose measured advantage is fragile to getting that state wrong —
+which is the argument for the clean-slate assertion that now refuses to start a
+run against surviving state, rather than for trusting the result.
 
 The decisions that actually cost us are these four, and they are the ones to
 check:
@@ -539,10 +568,12 @@ cd simulator && py -3.12 -m venv .venv && ./.venv/Scripts/pip install -r require
 
 ### With an LLM key
 
-Optional. Copy `.env.example` to `.env` and set `GEMINI_API_KEY`. Without it the
-cascade still resolves 75% of cases deterministically at 1.00 accuracy and
-abstains on the rest to `UNDIAGNOSED`, which is non-retryable — absence of a
-diagnosis never reads as permission to debit.
+Optional. Copy `.env.example` to `.env` and set either `GEMINI_API_KEY` or
+`ANTHROPIC_API_KEY` — the provider is selected by whichever is present, so set
+exactly one. Without either, the cascade still resolves 75% of cases
+deterministically at 1.00 accuracy and abstains on the rest to `UNDIAGNOSED`,
+which is non-retryable — absence of a diagnosis never reads as permission to
+debit.
 
 ### The demo profile
 

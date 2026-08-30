@@ -1,0 +1,228 @@
+<title>Capstan</title>
+<style>
+  @page { size: A4 portrait; margin: 11mm 12mm; }
+
+  :root {
+    --ink:   #12161C;
+    --muted: #5C6875;
+    --line:  #C9D1D9;
+    --haul:  #1F7A5C;   /* cockpit green, darkened for contrast on white */
+    --slip:  #9A6512;   /* cockpit amber, darkened for contrast on white */
+    --haulf: #4FD1A5;   /* cockpit hues, used only as large fills */
+    --slipf: #E8A33D;
+  }
+
+  body {
+    margin: 0;
+    background: #fff;
+    color: var(--ink);
+    font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-size: 9.8pt;
+    line-height: 1.42;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  main { max-width: 186mm; margin: 0 auto; }
+
+  h1 { font-size: 21pt; letter-spacing: -0.4pt; margin: 0; font-weight: 650; }
+  h2 {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.9pt;
+    color: var(--muted); font-weight: 650;
+    margin: 0 0 4pt; padding-bottom: 2.5pt; border-bottom: 1px solid var(--line);
+  }
+  p { margin: 0 0 5pt; }
+  .num { font-variant-numeric: tabular-nums; }
+  .dim { color: var(--muted); }
+
+  /* masthead ---------------------------------------------------------- */
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 10mm; }
+  .kicker { color: var(--muted); font-size: 8.5pt; text-align: right; line-height: 1.35; }
+  .claim { font-size: 11pt; line-height: 1.4; margin: 5pt 0 9pt; max-width: 152mm; }
+  .claim b { font-weight: 650; }
+
+  /* ratchet ----------------------------------------------------------- */
+  figure { margin: 0 0 3pt; }
+  figcaption { color: var(--muted); font-size: 8.2pt; margin-top: 2pt; }
+
+  /* stat strip -------------------------------------------------------- */
+  .strip { display: flex; margin: 8pt 0 9pt; border: 1px solid var(--line); }
+  .strip div { flex: 1; padding: 5pt 7pt; border-left: 1px solid var(--line); }
+  .strip div:first-child { border-left: 0; }
+  .strip .v { font-size: 15pt; font-weight: 650; letter-spacing: -0.3pt; display: block; }
+  .strip .k { color: var(--muted); font-size: 7.6pt; display: block; margin-top: 1pt; }
+  .good { color: var(--haul); }
+
+  /* two-column body --------------------------------------------------- */
+  .cols { display: flex; gap: 8mm; }
+  .cols > section { flex: 1; min-width: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 9.1pt; }
+  th, td { padding: 3pt 4pt; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 7.6pt;
+       text-transform: uppercase; letter-spacing: 0.4pt; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td b { font-weight: 650; }
+
+  .callout {
+    border-left: 2.5pt solid var(--slipf); background: #FBF4E7;
+    padding: 5pt 7pt; margin: 7pt 0 0; font-size: 8.8pt;
+  }
+  .callout b { color: var(--slip); }
+
+  footer {
+    margin-top: 9pt; padding-top: 5pt; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 8.3pt; display: flex; gap: 6mm;
+  }
+  footer p { margin: 0; flex: 1; }
+  code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.92em; }
+</style>
+
+<main>
+  <header>
+    <div>
+      <h1>Capstan</h1>
+      <div class="dim" style="font-size:9pt;margin-top:1pt">
+        Bounded revenue recovery for failed recurring payments
+      </div>
+    </div>
+    <div class="kicker">
+      Razorpay AI Buildathon &middot; Track 03<br>
+      10 fixtures &middot; 3,000 cases &middot; one oracle, both arms
+    </div>
+  </header>
+
+  <p class="claim">
+    A failed mandate debit is diagnosed, matched to a bounded recovery ladder, and
+    executed exactly once. At <b>49% of a naive retry ladder&rsquo;s attempt volume</b> it
+    recovers more money on <b>10 of 10 batches</b>, with <b>zero</b> duplicate charges
+    against the baseline&rsquo;s 33 and <b>zero</b> debits against fraud-blocked customers
+    against the baseline&rsquo;s 270.
+  </p>
+
+  <figure>
+    <svg viewBox="0 0 1000 150" width="100%" height="120" role="img"
+         aria-label="Median share of value at risk recovered: baseline 28.9 percent, Capstan 41.8 percent, oracle ceiling 79.0 percent.">
+      <rect x="0" y="26" width="1000" height="34" fill="#F1F4F7"/>
+      <rect x="0" y="80" width="1000" height="34" fill="#F1F4F7"/>
+
+      <rect x="0" y="26" width="289.4" height="34" fill="#B6C0CB"/>
+      <text x="299" y="49" font-size="19" fill="#12161C">baseline <tspan font-weight="650">28.9%</tspan></text>
+      <text x="0" y="19" font-size="14" fill="#5C6875" letter-spacing="1">FIXED LADDER &#8212; T+1, T+3, T+5</text>
+
+      <rect x="0" y="80" width="417.6" height="34" fill="#4FD1A5"/>
+      <text x="427" y="103" font-size="19" fill="#12161C">capstan <tspan font-weight="650">41.8%</tspan></text>
+      <text x="0" y="73" font-size="14" fill="#1F7A5C" letter-spacing="1" font-weight="650">CAPSTAN</text>
+
+      <line x1="790" y1="20" x2="790" y2="120" stroke="#E8A33D" stroke-width="3"/>
+      <path d="M790 120 l-6 10 h12 z" fill="#E8A33D"/>
+      <text x="782" y="16" font-size="14" fill="#9A6512" text-anchor="end" font-weight="650">ceiling 79.0%</text>
+
+      <line x1="0" y1="128" x2="1000" y2="128" stroke="#C9D1D9" stroke-width="1"/>
+      <text x="0" y="146" font-size="14" fill="#5C6875">&#8377;0</text>
+      <text x="1000" y="146" font-size="14" fill="#5C6875" text-anchor="end">&#8377;36.47 lakh at risk</text>
+    </svg>
+    <figcaption>
+      Median share of value at risk recovered across ten independently seeded batches
+      (IQR 6.60pp baseline, 3.63pp Capstan). Median delta <b>+12.51pp</b>, range +3.34 to
+      +18.63, ahead on all ten. The ceiling is what perfect foresight recovers on the same
+      fixtures &mdash; published, because a result without one implies a target that does
+      not exist.
+    </figcaption>
+  </figure>
+
+  <div class="strip">
+    <div><span class="v num">&#8377;4.33L</span><span class="k">more recovered than the baseline, of &#8377;36.47L at risk</span></div>
+    <div><span class="v num">49%</span><span class="k">of the baseline&rsquo;s debit volume &mdash; 3,863 vs 7,858</span></div>
+    <div><span class="v num good">0</span><span class="k">duplicate charges &mdash; baseline 33</span></div>
+    <div><span class="v num good">0</span><span class="k">debits on fraud-blocked customers &mdash; baseline 270</span></div>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h2>Per attempt &mdash; the comparison that isolates policy from volume</h2>
+      <p class="dim" style="margin-bottom:4pt">
+        Recovery rate is the wrong headline: the baseline buys it with volume. Cap both
+        arms at the same debits per case.
+      </p>
+      <table>
+        <thead><tr><th>Budget</th><th class="n">Baseline</th><th class="n">Capstan</th><th class="n">Delta</th></tr></thead>
+        <tbody>
+          <tr><td>1 debit / case</td><td class="n">11.35%</td><td class="n"><b>24.66%</b></td><td class="n"><b>+13.31pp</b></td></tr>
+          <tr><td>2 debits / case</td><td class="n">27.08%</td><td class="n"><b>36.52%</b></td><td class="n"><b>+9.44pp</b></td></tr>
+          <tr><td>3 debits / case</td><td class="n">30.26%</td><td class="n"><b>38.68%</b></td><td class="n"><b>+8.42pp</b></td></tr>
+        </tbody>
+      </table>
+      <p class="dim" style="margin-top:4pt">
+        Capstan wins wherever the cap binds. The claim is cost-per-recovery and safety,
+        not recovery rate.
+      </p>
+
+      <div class="callout">
+        <b>Payday timing is worth more than our entire lead.</b> Ablate it and Capstan
+        recovers 23.18% against the baseline&rsquo;s 30.26% &mdash; <b>we lose.</b> That is the
+        load-bearing decision and it is checkable: run the ablation. It is also the first
+        thing we would replace, because payday is inferred from prior successful debits
+        and defaults to the 1st of the month on a cold batch.
+      </div>
+    </section>
+
+    <section>
+      <h2>Four calls we made against our own interest</h2>
+      <p class="dim" style="margin-bottom:4pt">
+        Every measurement bug we found had been depressing <em>our</em> numbers &mdash; which is
+        structural rather than virtuous, since the baseline holds almost no state to
+        corrupt. So the bugs are not the evidence. These are.
+      </p>
+      <table>
+        <thead><tr><th>Decision</th><th>What it cost us</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gave the holdout a bank-narration vocabulary our rules had never seen</td>
+            <td>Reported diagnosis accuracy <b>0.9533</b>, not the <b>0.9833</b> the tuning set scores</td>
+          </tr>
+          <tr>
+            <td>Declined to model what a completed re-authorisation refreshes</td>
+            <td><b>4.36pp</b> of our own expectation, forgone and stated as a limitation</td>
+          </tr>
+          <tr>
+            <td>Left the simulator&rsquo;s independent-attempt bias in place</td>
+            <td>Correcting it would raise our numbers; it favours the arm we beat</td>
+          </tr>
+          <tr>
+            <td>Refused to add a cost model after seeing results</td>
+            <td>Pricing attempts, churn or refunds would flip the ranking our way</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top:5pt">
+        Every simulator correction was written down with a predicted direction and
+        <b>committed before it was measured</b> (<code>docs/decisions/</code>). Four of four
+        pre-registered magnitudes then came in below prediction; we report the misses
+        rather than the ranges.
+      </p>
+    </section>
+  </div>
+
+  <footer>
+    <p>
+      <b>How to check it.</b> Same oracle for both arms, package-isolated from the agent by
+      a test that fails the build if the agent so much as names it. Ceiling published; all
+      177 non-recoveries published with causes. Raw output in
+      <code>docs/report_holdout.json</code>.
+    </p>
+    <p>
+      <b>Where the AI is.</b> Diagnosis only. A deterministic map over Razorpay&rsquo;s
+      <code>source:step:reason</code> resolves 75% of cases at 1.00 accuracy; an LLM
+      classifies the 25% where the bank declined without a reason.
+      <code>PolicyEngine</code> holds no classifier reference &mdash; the model cannot reach
+      a decision path.
+    </p>
+    <p>
+      <b>What is simulated.</b> The Razorpay adapter is written against documented test-mode
+      endpoints but has not been exercised against live credentials &mdash; the recurring leg
+      needs a tokenised mandate from a checkout flow that cannot be completed headlessly.
+      Every number here runs through the simulated gateway, and we say so.
+    </p>
+  </footer>
+</main>
