@@ -239,6 +239,19 @@ public class ExecutionStore {
     }
 
     @Transactional
+    public void recordReauth(UUID caseId, Instant requestedAt, Instant completedAt) {
+        jdbc.sql("""
+                update recovery_case
+                   set reauth_requested_at = :requested, reauth_completed_at = :completed
+                 where id = :id
+                """)
+                .param("id", caseId)
+                .param("requested", at(requestedAt))
+                .param("completed", at(completedAt))
+                .update();
+    }
+
+    @Transactional
     public void setCaseStatus(UUID caseId, String status, Instant now) {
         jdbc.sql("update recovery_case set status = :status, updated_at = :now where id = :id")
                 .param("id", caseId)

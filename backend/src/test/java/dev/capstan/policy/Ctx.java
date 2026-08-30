@@ -42,6 +42,8 @@ final class Ctx {
     private Integer salaryDay = null;
     private int recentAttempts = 0;
     private int recentFailures = 0;
+    private Instant reauthRequestedAt;
+    private Instant reauthCompletedAt;
     private String failureReason = "insufficient_funds";
 
     static Ctx a() {
@@ -49,6 +51,8 @@ final class Ctx {
     }
 
     Ctx caseId(UUID v) { this.caseId = v; return this; }
+    Ctx reauthRequestedAt(Instant v) { this.reauthRequestedAt = v; return this; }
+    Ctx reauthCompletedAt(Instant v) { this.reauthCompletedAt = v; return this; }
     Ctx now(Instant v) { this.now = v; return this; }
     Ctx cause(FailureCause v) { this.cause = v; return this; }
     Ctx confidence(double v) { this.confidence = v; return this; }
@@ -80,6 +84,7 @@ final class Ctx {
                 amountPaise, firstFailedAt, cycleEnd, mandateStatus, validFrom, validUntil,
                 maxAmountPaise, rail, alternateRail, optedOut, riskFlagged, locale,
                 ladderPosition, debitAttempts, commsSent, lastDebitAt, lastCommsAt, salaryDay,
-                recentAttempts, recentFailures, failureReason, java.util.Set.of());
+                recentAttempts, recentFailures, failureReason,
+                reauthRequestedAt, reauthCompletedAt, java.util.Set.of());
     }
 }

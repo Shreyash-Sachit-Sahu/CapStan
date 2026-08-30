@@ -23,6 +23,15 @@ public interface PaymentGateway {
     void sendCommunication(CommsCommand cmd);
 
     /**
+     * Whether the customer completed a re-authorisation we asked for.
+     *
+     * <p>Observable on purpose. A merchant learns about a mandate re-registration
+     * from the gateway, and the whole point of gating a debit on completion is
+     * that completion is something you can know rather than assume.
+     */
+    boolean reauthCompleted(UUID caseId);
+
+    /**
      * @param alternateRail true when this debit is a RAIL_SWITCH onto the
      *                      instrument the mandate lists as its alternate. The
      *                      gateway needs it because whether a given rail can

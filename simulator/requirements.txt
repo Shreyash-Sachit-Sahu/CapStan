@@ -1,0 +1,5 @@
+# Pinned so a regenerated batch is byte-identical on any machine.
+# Install:  py -3.12 -m venv simulator/.venv
+#           simulator/.venv/Scripts/python.exe -m pip install -r simulator/requirements.txt
+numpy==2.5.2
+Faker==40.37.0

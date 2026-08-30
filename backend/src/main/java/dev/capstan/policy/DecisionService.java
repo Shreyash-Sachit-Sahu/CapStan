@@ -206,6 +206,7 @@ public class DecisionService {
                        m.status as mandate_status, m.valid_from, m.valid_until,
                        m.max_amount_paise, m.rail, m.alternate_rail,
                        cu.contact_opted_out, cu.risk_flagged, cu.preferred_locale,
+                       c.reauth_requested_at, c.reauth_completed_at,
                        (select count(*) from intervention i where i.case_id = c.id) as ladder_position,
                        (select count(*) from payment_attempt p where p.case_id = c.id) as debit_attempts,
                        (select count(*) from intervention i where i.case_id = c.id
@@ -277,6 +278,8 @@ public class DecisionService {
                 rs.getInt("recent_attempts"),
                 rs.getInt("recent_failures"),
                 rs.getString("raw_error_reason"),
+                instant(rs, "reauth_requested_at"),
+                instant(rs, "reauth_completed_at"),
                 java.util.Set.of());
     }
 

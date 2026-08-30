@@ -147,7 +147,7 @@ class GuardrailBoundaryTest {
         // comms frequency (G8), and would defer rather than block, masking this.
         Instant now = ist("2026-09-05T13:30:00");
         DecisionRecord record = engine.decide(Ctx.a()
-                .cause(FailureCause.CARD_EXPIRED).ladderPosition(1)
+                .cause(FailureCause.CARD_EXPIRED).ladderPosition(2)
                 .lastCommsAt(now.minusSeconds(47 * 3600)).now(now).build());
 
         assertThat(record.finalAction()).isNotEqualTo(InterventionKind.CUSTOMER_NUDGE);

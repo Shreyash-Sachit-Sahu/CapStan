@@ -1,0 +1,75 @@
+# Tier 1 — deterministic map over the Razorpay error object.
+#
+# key: <source>:<step>:<reason>   |  '*' wildcards allowed on any segment
+#
+# Keyed on `reason`, not `code`. Razorpay's `code` is a coarse class with three
+# values (BAD_REQUEST_ERROR / GATEWAY_ERROR / SERVER_ERROR); `reason` carries the
+# specific machine-readable cause. Every reason below is a published Razorpay
+# value — see docs/briefs/phase-03-diagnosis.md §3 for sources.
+#
+# Deliberately absent: payment_failed and payment_declined. Both mean "the bank
+# declined and did not tell Razorpay why", so they carry no cause information and
+# mapping them here would be guessing. They fall through to Tier 2 and Tier 3.
+
+- match: "customer:payment_authorization:insufficient_funds"
+  cause: INSUFFICIENT_FUNDS
+  confidence: 0.99
+
+- match: "bank:payment_authorization:bank_technical_error"
+  cause: ISSUER_DECLINE_TEMPORARY
+  confidence: 0.95
+- match: "gateway:payment_authorization:issuer_technical_error"
+  cause: ISSUER_DECLINE_TEMPORARY
+  confidence: 0.95
+
+- match: "gateway:payment_authorization:request_timed_out"
+  cause: NETWORK_TIMEOUT
+  confidence: 0.97
+- match: "gateway:payment_authorization:invalid_response_from_gateway"
+  cause: NETWORK_TIMEOUT
+  confidence: 0.95
+- match: "gateway:payment_authorization:gateway_technical_error"
+  cause: NETWORK_TIMEOUT
+  confidence: 0.90
+
+- match: "*:*:card_expired"
+  cause: CARD_EXPIRED
+  confidence: 0.99
+
+- match: "*:*:transaction_limit_exceeded"
+  cause: MANDATE_LIMIT_EXCEEDED
+  confidence: 0.96
+
+# Razorpay does not distinguish revoked from expired — both surface as
+# mandate_not_active. The 0.99 is confidence that the mandate is not active,
+# which is certain; MandateStateRefiner then picks between MANDATE_REVOKED and
+# MANDATE_EXPIRED using mandate.valid_until. That distinction is not present in
+# the payload, so it must never be asked of the classifier.
+- match: "business:*:mandate_not_active"
+  cause: MANDATE_REVOKED
+  confidence: 0.99
+
+- match: "*:payment_authentication:authentication_failed"
+  cause: AUTHENTICATION_FAILED
+  confidence: 0.98
+- match: "*:payment_authentication:incorrect_otp"
+  cause: AUTHENTICATION_FAILED
+  confidence: 0.98
+- match: "*:payment_authentication:otp_expired"
+  cause: AUTHENTICATION_FAILED
+  confidence: 0.98
+
+- match: "bank:*:bank_account_invalid"
+  cause: ACCOUNT_CLOSED
+  confidence: 0.97
+
+- match: "gateway:*:payment_risk_check_failed"
+  cause: RISK_BLOCKED
+  confidence: 0.99
+- match: "bank:*:debit_instrument_blocked"
+  cause: RISK_BLOCKED
+  confidence: 0.90
+
+- match: "razorpay:*:server_error"
+  cause: TECHNICAL_DECLINE_UNKNOWN
+  confidence: 0.85

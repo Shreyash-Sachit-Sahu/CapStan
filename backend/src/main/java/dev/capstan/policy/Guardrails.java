@@ -9,7 +9,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
- * G1-G11, in the order they decide. All eleven are evaluated on every decision;
+ * G1-G12, in the order they decide. All twelve are evaluated on every decision;
  * the first non-ALLOW in this order wins.
  */
 public final class Guardrails {
@@ -57,7 +57,8 @@ public final class Guardrails {
                 new Rule("G8", "Comms frequency", Guardrails::commsFrequency),
                 new Rule("G9", "Rail availability", Guardrails::railAvailability),
                 new Rule("G10", "Risk hold", Guardrails::riskHold),
-                new Rule("G11", "Issuer circuit breaker", Guardrails::issuerBreaker));
+                new Rule("G11", "Issuer circuit breaker", Guardrails::issuerBreaker),
+                new Rule("G12", "Re-authorisation pending", Guardrails::reauthPending));
     }
 
     // G1 — debits are contractual, not marketing, so an opt-out does not stop them.
@@ -239,5 +240,32 @@ public final class Guardrails {
         }
         return Guardrail.Outcome.allow(Math.round(failureRate * 100)
                 + "% recent failure rate for reason '" + ctx.failureReason() + "'");
+    }
+
+    /**
+     * G12 -- a debit waits for a re-authorisation to be completed, not merely
+     * requested.
+     *
+     * <p>Four causes now carry one debit rung after their REAUTH_LINK, because a
+     * customer who re-registers their mandate should be charged rather than
+     * escalated to a human. That rung is only safe if the policy can tell the
+     * difference between "we asked" and "they did it" -- charging on the strength
+     * of having sent a link is guessing, which is what the guardrails exist to
+     * stop.
+     *
+     * <p>Completion is observed: the gateway resolves it when the link is sent and
+     * { DebitWorker} persists it. Not applicable where no link was sent.
+     */
+    private static Guardrail.Outcome reauthPending(DecisionContext ctx, InterventionKind proposed,
+                                                   PolicyTable.Policy policy) {
+        if (!proposed.isDebit || ctx.reauthRequestedAt() == null) {
+            return Guardrail.Outcome.notApplicable("no re-authorisation outstanding");
+        }
+        if (ctx.reauthCompletedAt() != null) {
+            return Guardrail.Outcome.allow("re-authorisation completed at " + ctx.reauthCompletedAt());
+        }
+        return Guardrail.Outcome.advanceLadder(
+                "re-authorisation requested at " + ctx.reauthRequestedAt()
+                        + " but not completed; no debit until the customer acts");
     }
 }

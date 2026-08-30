@@ -1,6 +1,7 @@
 package dev.capstan.backtest;
 
 import dev.capstan.policy.DecisionContext;
+import java.time.Instant;
 
 /**
  * One mechanism switched off, everything else identical.
@@ -38,9 +39,16 @@ public enum Ablation {
     RECONCILE_BEFORE_RETRY("reconcile-before-retry"),
 
     /**
-     * Re-auth routing. Raising the mandate cap out of reach stops G4 ever
+     * Over-cap substitution. Raising the mandate cap out of reach stops G4 ever
      * substituting a re-auth link for an over-cap debit, so those cases spend
-     * retries instead.
+     * retries instead. Previously mis-labelled "re-auth routing".
+     */
+    OVER_CAP_SUBSTITUTION("over-cap substitution"),
+
+    /**
+     * Re-auth routing: the debit rung that follows a completed re-authorisation.
+     * Disabling it means completion is never observed, G12 blocks, and the four
+     * re-auth causes fall through to escalation as they did before.
      */
     REAUTH_ROUTING("re-auth routing"),
 
@@ -80,13 +88,17 @@ public enum Ablation {
 
     /** Rebuilds the context with one field changed. Records have no {@code with}. */
     public DecisionContext shape(DecisionContext c) {
-        Long cap = this == REAUTH_ROUTING ? Long.MAX_VALUE : c.mandateMaxAmountPaise();
+        Long cap = this == OVER_CAP_SUBSTITUTION ? Long.MAX_VALUE : c.mandateMaxAmountPaise();
         String alternate = this == RAIL_SWITCH ? null : c.alternateRail();
         double confidence = this == LOW_CONFIDENCE_CONSERVATISM ? 1.0 : c.diagnosisConfidence();
         java.util.Set<String> off = this == QUIET_HOURS ? java.util.Set.of("G7") : c.disabledGuardrails();
+        // Disabling re-auth routing means the completion is never observed, so G12
+        // blocks the gated rung and the ladder falls through as it did before.
+        Instant reauthDone = this == REAUTH_ROUTING ? null : c.reauthCompletedAt();
 
         if (cap == c.mandateMaxAmountPaise() && alternate == c.alternateRail()
-                && confidence == c.diagnosisConfidence() && off.equals(c.disabledGuardrails())) {
+                && confidence == c.diagnosisConfidence() && off.equals(c.disabledGuardrails())
+                && reauthDone == c.reauthCompletedAt()) {
             return c;
         }
         return new DecisionContext(
@@ -98,6 +110,7 @@ public enum Ablation {
                 c.contactOptedOut(), c.riskFlagged(), c.preferredLocale(),
                 c.ladderPosition(), c.debitAttemptsMade(), c.commsSentInCycle(),
                 c.lastDebitAttemptAt(), c.lastCommsAt(), c.inferredSalaryDay(),
-                c.recentAttemptsSameReason(), c.recentFailuresSameReason(), c.failureReason(), off);
+                c.recentAttemptsSameReason(), c.recentFailuresSameReason(), c.failureReason(),
+                c.reauthRequestedAt(), reauthDone, off);
     }
 }

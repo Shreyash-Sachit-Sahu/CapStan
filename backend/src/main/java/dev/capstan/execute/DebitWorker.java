@@ -46,6 +46,8 @@ public class DebitWorker {
     private static final Duration LEASE = Duration.ofMinutes(10);
     /** First reconciliation of an attempt whose outcome never arrived. */
     private static final Duration FIRST_RECONCILE = Duration.ofSeconds(30);
+    /** How long a customer takes to act on a re-auth link, once they will. */
+    private static final Duration REAUTH_RESPONSE = Duration.ofHours(6);
 
     /** Case states in which acting is still meaningful. Nothing else is. */
     private static final List<String> LIVE = List.of("SCHEDULED", "IN_FLIGHT");
@@ -250,6 +252,12 @@ public class DebitWorker {
     private boolean sendComms(Job job, Instant now) {
         gateway.sendCommunication(new CommsCommand(
                 job.caseId(), job.kind().name(), job.locale(), job.messageText(), now));
+        if (job.kind() == InterventionKind.REAUTH_LINK) {
+            // Record what we asked for and, if the customer acted, that they did.
+            // G12 reads both: a debit waits for completion, never for the ask.
+            store.recordReauth(job.caseId(), now,
+                    gateway.reauthCompleted(job.caseId()) ? now.plus(REAUTH_RESPONSE) : null);
+        }
         store.settleClaim(job.interventionId(), "SENT");
         if (LIVE.contains(store.caseStatus(job.caseId()))) {
             store.setCaseStatus(job.caseId(), "DIAGNOSED", now);

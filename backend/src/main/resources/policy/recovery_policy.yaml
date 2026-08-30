@@ -61,23 +61,29 @@ policies:
     note: "Ambiguous. Two probes maximum, then ask the customer."
 
   - cause: CARD_EXPIRED
-    ladder: [REAUTH_LINK, CUSTOMER_NUDGE, HUMAN_ESCALATION]
-    max_debit_attempts: 0
-    note: "No debit can succeed. Retrying is pure waste."
+    ladder: [REAUTH_LINK, SCHEDULED_RETRY, CUSTOMER_NUDGE, HUMAN_ESCALATION]
+    schedule: { SCHEDULED_RETRY: "+24h" }
+    max_debit_attempts: 1
+    note: "No debit succeeds on the existing instrument. One is permitted only
+           after the customer has completed the re-auth link -- G12 gates it on
+           observed completion, never on the link having been sent."
 
   - cause: MANDATE_LIMIT_EXCEEDED
-    ladder: [REAUTH_LINK, CUSTOMER_NUDGE, HUMAN_ESCALATION]
-    max_debit_attempts: 0
+    ladder: [REAUTH_LINK, SCHEDULED_RETRY, CUSTOMER_NUDGE, HUMAN_ESCALATION]
+    schedule: { SCHEDULED_RETRY: "+24h" }
+    max_debit_attempts: 1
 
   # Added when the taxonomy gained MANDATE_EXPIRED. Same shape as the other
   # re-auth causes: no debit on the existing instrument can ever succeed.
   - cause: MANDATE_EXPIRED
-    ladder: [REAUTH_LINK, CUSTOMER_NUDGE, HUMAN_ESCALATION]
-    max_debit_attempts: 0
+    ladder: [REAUTH_LINK, SCHEDULED_RETRY, CUSTOMER_NUDGE, HUMAN_ESCALATION]
+    schedule: { SCHEDULED_RETRY: "+24h" }
+    max_debit_attempts: 1
 
   - cause: AUTHENTICATION_FAILED
-    ladder: [RAIL_SWITCH, REAUTH_LINK, ABANDON]
-    max_debit_attempts: 1
+    ladder: [RAIL_SWITCH, REAUTH_LINK, SCHEDULED_RETRY, ABANDON]
+    schedule: { SCHEDULED_RETRY: "+24h" }
+    max_debit_attempts: 2
     terminal_reason: "Authentication could not be completed on any available rail"
 
   - cause: MANDATE_REVOKED

@@ -68,13 +68,36 @@ class PolicyEngineTest {
             assertThat(record.finalAction()).isEqualTo(InterventionKind.RECONCILE_ONLY);
         }
 
+        /**
+         * MANDATE_EXPIRED now permits exactly one debit, but only after the
+         * customer has completed a re-authorisation. This asserts the property
+         * that actually matters -- no debit on the strength of having *sent* a
+         * link -- rather than the old blanket "never debits", which stopped being
+         * true when the rung was added and would otherwise just get deleted.
+         */
         @Test
-        void mandateExpiredHasAPolicyAndNeverDebits() {
+        void mandateExpiredNeverDebitsWithoutACompletedReauth() {
             PolicyTable.Policy policy = table.forCause(FailureCause.MANDATE_EXPIRED);
-            assertThat(policy.maxDebitAttempts()).isZero();
-            assertThat(policy.ladder()).doesNotContain(
-                    InterventionKind.SCHEDULED_RETRY, InterventionKind.PAYDAY_RETRY,
-                    InterventionKind.IMMEDIATE_RETRY, InterventionKind.RAIL_SWITCH);
+            assertThat(policy.maxDebitAttempts()).isOne();
+            assertThat(policy.ladder().get(0)).isEqualTo(InterventionKind.REAUTH_LINK);
+
+            DecisionRecord asked = engine.decide(Ctx.a()
+                    .cause(FailureCause.MANDATE_EXPIRED).ladderPosition(1)
+                    .reauthRequestedAt(Instant.parse("2026-09-01T10:00:00Z"))
+                    .reauthCompletedAt(null).build());
+            assertThat(asked.finalAction().isDebit)
+                    .as("a link that was sent but not completed must not authorise a debit")
+                    .isFalse();
+            assertThat(asked.guardrails())
+                    .anyMatch(g -> g.id().equals("G12") && g.result().equals("BLOCK"));
+
+            DecisionRecord completed = engine.decide(Ctx.a()
+                    .cause(FailureCause.MANDATE_EXPIRED).ladderPosition(1)
+                    .reauthRequestedAt(Instant.parse("2026-09-01T10:00:00Z"))
+                    .reauthCompletedAt(Instant.parse("2026-09-01T16:00:00Z")).build());
+            assertThat(completed.finalAction())
+                    .as("a completed re-authorisation earns exactly one debit")
+                    .isEqualTo(InterventionKind.SCHEDULED_RETRY);
         }
 
         @Test
@@ -228,7 +251,7 @@ class PolicyEngineTest {
             DecisionRecord record = engine.decide(Ctx.a().build());
 
             assertThat(record.guardrails()).extracting(DecisionRecord.GuardrailEvaluation::id)
-                    .contains("G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11");
+                    .contains("G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12");
             assertThat(record.guardrails()).anyMatch(g -> g.result().equals("N/A"));
             assertThat(record.guardrails()).allMatch(g -> g.detail() != null && !g.detail().isBlank());
         }
@@ -238,7 +261,7 @@ class PolicyEngineTest {
             // 22:40 IST -> quiet hours. The nudge that was NOT sent is the evidence.
             Instant quiet = Instant.parse("2026-09-03T17:10:00Z");
             DecisionRecord record = engine.decide(Ctx.a()
-                    .cause(FailureCause.CARD_EXPIRED).ladderPosition(1).now(quiet).build());
+                    .cause(FailureCause.CARD_EXPIRED).ladderPosition(2).now(quiet).build());
 
             assertThat(record.finalAction()).isEqualTo(InterventionKind.CUSTOMER_NUDGE);
             assertThat(resultOf(record, "G7")).isEqualTo("DEFER");

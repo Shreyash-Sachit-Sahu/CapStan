@@ -1,0 +1,55 @@
+spring:
+  application.name: capstan
+  config.import: "optional:file:../.env[.properties]"
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:15432/capstan
+    username: capstan
+    password: ${DB_PASSWORD:capstan_dev_only}
+    hikari:
+      maximum-pool-size: 12
+      pool-name: capstan-pool
+  jpa:
+    hibernate.ddl-auto: validate      # Flyway owns the schema. Never 'update'.
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.jdbc.batch_size: 50
+      hibernate.order_inserts: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: capstan
+    password: ${RABBIT_PASSWORD:capstan_dev_only}
+    listener.simple:
+      acknowledge-mode: manual
+      prefetch: 8
+      default-requeue-rejected: false   # rejected messages go to the DLX, not back
+  data.redis:
+    host: localhost
+    port: 6379
+
+management:
+  endpoints.web.exposure.include: health,info,metrics
+  endpoint.health.show-details: always
+
+capstan:
+  clock-zone: UTC
+  display-zone: Asia/Kolkata
+  llm:
+    timeout-ms: 30000
+    # Free tiers allow roughly 10-15 requests a minute. A cold 35-case eval run
+    # would 429 partway through without spacing; repeats are absorbed by the cache.
+    min-interval-ms: 4000
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      model: gemini-flash-lite-latest
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model: claude-haiku-4-5
+
+logging.level:
+  dev.capstan: DEBUG

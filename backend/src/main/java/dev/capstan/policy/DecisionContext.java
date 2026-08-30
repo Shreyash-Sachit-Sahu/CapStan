@@ -59,6 +59,10 @@ public record DecisionContext(
         int recentFailuresSameReason,
         String failureReason,
 
+        // re-authorisation, observed rather than assumed
+        Instant reauthRequestedAt,
+        Instant reauthCompletedAt,
+
         /**
          * Guardrail ids the engine must skip. Always empty in production --
          * { DecisionService} passes { Set.of()} and nothing else can

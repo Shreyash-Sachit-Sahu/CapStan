@@ -139,6 +139,13 @@ public class RazorpayTestGateway implements PaymentGateway {
     }
 
     @Override
+    public boolean reauthCompleted(java.util.UUID caseId) {
+        // Real completion arrives as a mandate webhook. Nothing here consumes one
+        // yet, so this reports the truth: we have not observed a re-authorisation.
+        return false;
+    }
+
+    @Override
     public void sendCommunication(CommsCommand cmd) {
         // Capstan does not own a messaging provider, and wiring one to send real
         // SMS during a demo is a liability, not a feature.

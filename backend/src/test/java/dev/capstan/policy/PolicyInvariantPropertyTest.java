@@ -151,7 +151,8 @@ class PolicyInvariantPropertyTest {
                 ctx.preferredLocale(), position, debits, ctx.commsSentInCycle(),
                 debits > 0 ? now.minusSeconds(5 * 3600) : null, ctx.lastCommsAt(),
                 ctx.inferredSalaryDay(), ctx.recentAttemptsSameReason(),
-                ctx.recentFailuresSameReason(), ctx.failureReason(), ctx.disabledGuardrails());
+                ctx.recentFailuresSameReason(), ctx.failureReason(),
+                ctx.reauthRequestedAt(), ctx.reauthCompletedAt(), ctx.disabledGuardrails());
     }
 
     private static DecisionContext randomContext(Random rng, int seed) {
@@ -191,6 +192,7 @@ class PolicyInvariantPropertyTest {
                 rng.nextInt(30),
                 rng.nextInt(30),
                 pick(rng, "insufficient_funds", "payment_failed", "bank_technical_error"),
+                null, null,
                 java.util.Set.of());
     }
 

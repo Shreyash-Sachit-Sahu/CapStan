@@ -142,90 +142,128 @@ success while a debit was already in flight, rather than narrowing it.
 
 ## The backtest
 
-### Per attempt, which is the comparison that isolates policy from volume
-
-Cap both arms at the same number of debits per case and Capstan wins at every
-budget:
-
-| budget | baseline | Capstan | delta |
-|---:|---:|---:|---:|
-| 1 debit per case | 11.35% | **20.43%** | **+9.08pp** |
-| 2 debits per case | 27.08% | **31.38%** | **+4.31pp** |
-| 3 debits per case | 30.26% | **33.55%** | **+3.29pp** |
-
-At one attempt each, Capstan recovers **80% more money from the identical single
-shot**. That is payday-window timing doing real work, and it is the cleanest
-statement of what the policy is for: choosing *when* to retry, not how often.
-
 ### Headline, ten distinct fixtures, 3,000 cases
 
 | | median | IQR | duplicate charges | debits on fraud-blocked customers | debit attempts |
 |---|---:|---:|---:|---:|---:|
 | Fixed-ladder baseline | 28.94% | 6.60pp | 33 | 270 | 7,858 |
-| **Capstan** | **35.47%** | **3.88pp** | **0** | **0** | 3,671 |
+| **Capstan** | **41.76%** | **3.63pp** | **0** | **0** | 3,863 |
 | Oracle upper bound | 79.00% | 4.88pp | — | — | — |
 
-Median delta **+5.85pp**, range +1.02 to +12.56, **Capstan ahead on 10 of 10
-seeds** — at 47% of the attempt volume, with less than two-thirds the run-to-run
-variance.
+Median delta **+12.51pp**, range +3.34 to +18.63, **Capstan ahead on 10 of 10
+seeds** — at **49% of the attempt volume** and with a little over half the
+run-to-run variance.
+
+### Per attempt, which isolates policy from volume
+
+| budget | baseline | Capstan | delta |
+|---:|---:|---:|---:|
+| 1 debit per case | 11.35% | **24.66%** | **+13.31pp** |
+| 2 debits per case | 27.08% | **36.52%** | **+9.44pp** |
+| 3 debits per case | 30.26% | **38.68%** | **+8.42pp** |
+
+At one attempt each, Capstan recovers more than twice what the baseline does from
+the identical single shot.
+
+### What each mechanism is worth
+
+| mechanism | pp of rupee recovery |
+|---|---:|
+| payday-window timing | **+15.50** |
+| re-auth routing | **+5.13** |
+| rail switch | +0.71 |
+| G7 quiet hours | +0.71 |
+| low-confidence conservatism | +0.71 |
+| reconcile-before-retry | +0.00 *(but 0 to 3 duplicate charges)* |
+
+Payday timing still dominates and re-auth routing is now clearly second. The
+three at +0.71pp are one-to-two-case effects — a median ticket is 0.34pp of a
+300-case batch — so they sit at the resolution limit, and the sweep is the better
+read for anything that small.
+
+Reconciliation moving recovery by nothing while preventing three duplicate
+charges is the ablation earning its keep: it is a safety mechanism, not a
+recovery one. **G7 quiet hours costs 0.71pp** — the first time we have priced it
+above zero, because comms now drive recovery through the re-auth path. That is
+what our own restriction costs, measured rather than assumed.
+
+### Predictions, pre-registered and mostly missed low
+
+Both simulator corrections in this phase were written down with a predicted
+direction and magnitude before being run, in `docs/decisions/`. The second one
+undershot:
+
+| quantity | predicted | measured | |
+|---|---:|---:|:--|
+| Capstan, holdout | 41–44% | 38.68% | miss, low |
+| Gap, holdout | +11 to +14pp | +8.42pp | miss, low |
+| Sweep median delta | +13 to +17pp | +12.51pp | miss, low |
+| re-auth routing ablation | +7 to +10pp | +5.13pp | miss, low |
+| Baseline / upper bound | unchanged | unchanged | hit |
+| Debit attempts | 390–405 | 399 | hit |
+| escalatedToHuman | 48–58 | 58 | hit |
+| duplicates / safety failures | 0 / 0 | 0 / 0 | hit |
+
+Every miss is low and every one has the same cause, named below. The two
+predicted failure modes — billing-cycle boundary, comms-frequency cap — did
+nothing at all.
+
+### Where the re-auth path stops, and what that costs
+
+One debit is permitted after a *completed* re-authorisation, gated by G12, which
+requires observed completion rather than the link merely having been sent:
+
+| cause | cases | re-auth completed | recovered | blocked by |
+|---|---:|---:|---:|---|
+| CARD_EXPIRED | 27 | 12 | **12** | — |
+| AUTHENTICATION_FAILED | 10 | 4 | **4** | — |
+| MANDATE_LIMIT_EXCEEDED | 21 | 8 | **0** | G4 ×21 |
+| MANDATE_EXPIRED | 6 | 2 | **0** | G3 |
+
+**Where re-authorisation was the only obstacle, conversion to recovery was 16 for
+16.** Where the mandate itself was still non-compliant, the guardrails refused —
+correctly. A completed re-authorisation does not refresh the mandate in this
+model: the per-transaction cap stays breached and the validity window stays
+lapsed, and an issuer would reject a debit against either.
+
+**27 of the 64 re-auth cases carry a constraint that re-authorisation does not
+clear here, and Capstan structurally forgoes ₹15,501 of expectation as a result.**
+Two independent routes agree on the size: oracle expectation gives 4.37pp, and
+the over-cap-substitution ablation measures 4.36pp by removing the binding cap
+(38.68% to 43.04%). In production this depends on whether the re-auth flow issues
+a *fresh* mandate — re-registering a card-on-file does clear an expiry, while
+raising a UPI Autopay per-transaction cap requires the customer to approve a new
+mandate rather than re-confirm the old one. We state it rather than model it,
+because unlike the correction below it is not a fact the domain settles.
 
 ### A modelling error we found, and the numbers before and after
 
 `SimulatedGateway.railPermits` treated *any* message as completing a mandate
-re-authorisation. The baseline sends a generic "your payment did not go through"
-SMS after its second failure, and from that point the simulator considered the
-customer's mandate re-authorised, so its next blind retry succeeded.
+re-authorisation, so the baseline's generic "your payment did not go through" SMS
+re-authorised the mandate and its next blind retry succeeded. That is false in any
+payment system, and `REAUTH_REQUIRED` is 25.0% of at-risk value, so the error
+handed a quarter of the money to the arm we were competing against.
 
-That is false about the payments domain. A dunning notice tells someone a payment
-failed; re-authorising an e-mandate is the customer completing an authenticated
-flow with their bank. `REAUTH_REQUIRED` is **25.0% of at-risk value**, and the
-error handed all of it to the arm we were competing against.
-
-The corrected rule — chargeable only after a `REAUTH_LINK` has been sent, never
-on a generic nudge — was written down, reasoned, and committed **before** the
-re-run, with its predicted direction recorded so it could be checked:
-`docs/decisions/2026-08-30-reauth-semantics.md`, commit `d23c26a`.
+The corrected rule was written, reasoned and committed **before** the re-run, with
+its predicted direction recorded: `docs/decisions/2026-08-30-reauth-semantics.md`,
+commit `d23c26a`.
 
 | holdout, rupee recovery | pre-fix | post-fix | delta |
 |---|---:|---:|---:|
 | Baseline | 40.84% | 30.26% | **−10.58pp** |
 | Capstan | 33.55% | 33.55% | −0.00pp |
 | Oracle upper bound | 83.29% | 83.29% | −0.00pp |
-| **gap (Capstan − baseline)** | **−7.29pp** | **+3.29pp** | |
-
-The prediction held: the baseline lost the access it only had through the defect,
-Capstan was unchanged to two decimals because its `REAUTH_REQUIRED` ladders carry
-`max_debit_attempts: 0` and never charged those cases either way, and the ceiling
-did not move.
 
 We fixed it knowing it would help us, on the test *would we fix this if it hurt
 us* — and we would, because a simulator in which an SMS completes a
-re-authorisation is not measuring anything real. It is the same category as the
-two harness bugs fixed earlier in this phase (cases decided before they failed;
-G11 contaminated across batches), both of which flattered the baseline and were
-fixed anyway, at a measured cost of ~22pp to Capstan.
+re-authorisation measures nothing real. Same category as the two harness bugs
+fixed earlier in the phase (cases decided before they failed; the issuer breaker
+contaminated across batches), both of which flattered the baseline and were fixed
+anyway, at a measured cost of about 22pp to Capstan.
 
-**What we did not do** is add a cost model. A cost model is a scoring function —
-a choice about weighing outcomes where there is no fact of the matter — and
-choosing one after seeing results is unfalsifiable. It would improve our numbers
-further and we are not going to build it.
-
-### What each mechanism is worth
-
-```
-payday-window timing         +15.50pp   without it Capstan falls to 18.05%
-rail switch                   +0.71pp
-reconcile-before-retry        +0.00pp   but 0 -> 3 duplicate charges
-re-auth routing               +0.00pp
-G7 quiet hours                +0.00pp   measured, not assumed
-low-confidence conservatism   +0.00pp   never fires; nothing lands under the 0.60 floor
-```
-
-Reconciliation moving recovery by nothing while introducing three duplicate
-charges is the ablation earning its keep: it is a safety mechanism, not a
-recovery one. **G7 costs nothing because it defers rather than suppresses** — the
-message still lands, at 09:15 instead of 03:00. That guardrail is free, and we
-know because we measured it.
+**What we did not do** is add a cost model. That is a scoring function — a choice
+about weighing outcomes where there is no fact of the matter — and choosing one
+after seeing results is unfalsifiable. It would improve our numbers further.
 
 ### A policy defect we found and fixed
 
@@ -234,37 +272,22 @@ debit rungs. The ladder binds, so the stated policy was never the policy that ra
 — on 32% of the batch, and it was the only cause whose debit-rung count
 disagreed with its own cap. Corrected to three reachable rungs: **+1.33pp**.
 
-### Where the 130 recoverable-but-missed cases go
-
-| | cases | value |
-|---|---:|---:|
-| Attempted inside the oracle window, lost the roll | 20 | ₹15,531 |
-| Attempted, never inside the window | 52 | ₹71,282 |
-| Never attempted at all | 58 | ₹89,709 |
-
-54 of those 58 are `REAUTH_REQUIRED`. Capstan sends a re-authorisation link,
-walks the ladder and escalates; those ladders never charge. **The oracle says a
-re-auth link converts about 43% of the time** (0.26–0.64), so a debit rung after
-a completed re-auth is worth **₹37,045 in expectation — 10.44pp of at-risk
-value**, larger than Capstan's entire current lead. That is the highest-value
-open item in the system and it is a real recovery channel, not a polite way of
-giving up on a quarter of the money.
-
 ### A remaining bias in our own simulator, disclosed not corrected
 
 `attempt_success_prob` draws independently per attempt, so three shots at 0.35
 beat one shot at 0.35 by a lot. Real retries against a declining issuer have
 diminishing returns and card networks penalise retry volume. Our oracle rewards
 persistence in a way reality does not, and it favours the arm that retries
-blindly — which is now the arm we are beating, so correcting it would help us
+blindly — which is the arm we are now beating, so correcting it would help us
 further. Recorded, not changed.
 
 ### The claim
 
-At **47% of the attempt volume**, Capstan recovers **more money** than the
-fixed-ladder baseline on 10 of 10 seeds, with **zero duplicate charges** against
-33 and **zero debits against fraud-blocked customers** against 270. Every figure
-comes from the metric list fixed in Phase 07 before any result existed.
+At **49% of the attempt volume**, Capstan recovers **more money** than the
+fixed-ladder baseline on 10 of 10 seeds — median 41.76% against 28.94% — with
+**zero duplicate charges** against 33 and **zero debits against fraud-blocked
+customers** against 270. Every figure comes from the metric list fixed in Phase 07
+before any result existed.
 
 ## The audit trail records what we didn't do
 

@@ -45,6 +45,7 @@ public class SimulatedGateway implements PaymentGateway {
     /** Every debit where money actually moved. Not keyed -- appended per call. */
     private final Map<UUID, List<Movement>> moved = new ConcurrentHashMap<>();
     private final Map<UUID, List<CommsCommand>> comms = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> reauthDone = new ConcurrentHashMap<>();
     private final AtomicInteger debitCalls = new AtomicInteger();
 
     private volatile Faults faults = Faults.none();
@@ -118,6 +119,7 @@ public class SimulatedGateway implements PaymentGateway {
     public void reset() {
         moved.clear();
         comms.clear();
+        reauthDone.clear();
         debitCalls.set(0);
         faults = Faults.none();
     }
@@ -193,6 +195,21 @@ public class SimulatedGateway implements PaymentGateway {
     @Override
     public void sendCommunication(CommsCommand cmd) {
         comms.computeIfAbsent(cmd.caseId(), k -> new CopyOnWriteArrayList<>()).add(cmd);
+
+        // A re-auth link either gets completed by the customer or it does not, and
+        // that is decided when it is sent rather than when a debit is later tried.
+        // Moving the roll here is what makes completion observable; it does not
+        // change its probability.
+        if ("REAUTH_LINK".equals(cmd.kind())) {
+            double sensitivity = oracle.truthFor(cmd.caseId())
+                    .map(Truth::nudgeSensitivity).orElse(0.0);
+            reauthDone.put(cmd.caseId(), roll(cmd.caseId() + ":reauth") < sensitivity);
+        }
+    }
+
+    @Override
+    public boolean reauthCompleted(UUID caseId) {
+        return Boolean.TRUE.equals(reauthDone.get(caseId));
     }
 
     private boolean issuerDown(DebitCommand cmd, List<Movement> history) {
@@ -231,12 +248,11 @@ public class SimulatedGateway implements PaymentGateway {
             return new Assessment(false, true, riskBlocked);
         }
 
-        double probability = "REAUTH_REQUIRED".equals(truth.requiredChannel())
-                // A re-auth link only helps if the customer acted on it, which
-                // is what nudge_sensitivity measures.
-                ? truth.nudgeSensitivity()
-                : truth.attemptSuccessProb();
-        return new Assessment(roll(cmd.idempotencyKey()) < probability, false, riskBlocked);
+        // nudge_sensitivity was already spent at comms time deciding whether the
+        // customer re-authorised. Applying it again here would charge the same
+        // probability twice for one event.
+        return new Assessment(roll(cmd.idempotencyKey()) < truth.attemptSuccessProb(),
+                false, riskBlocked);
     }
 
     private boolean railPermits(String requiredChannel, DebitCommand cmd) {
@@ -259,8 +275,7 @@ public class SimulatedGateway implements PaymentGateway {
             //
             // Whether the customer actually acted is the probability roll below,
             // which uses nudge_sensitivity for this channel.
-            case "REAUTH_REQUIRED" -> commsFor(cmd.caseId()).stream()
-                    .anyMatch(sent -> "REAUTH_LINK".equals(sent.kind()));
+            case "REAUTH_REQUIRED" -> reauthCompleted(cmd.caseId());
             default -> throw new IllegalStateException("unknown channel: " + requiredChannel);
         };
     }

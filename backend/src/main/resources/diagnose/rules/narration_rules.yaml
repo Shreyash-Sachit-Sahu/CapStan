@@ -1,0 +1,59 @@
+# Tier 2 — normalised narration rules, tried when Tier 1 has no match.
+#
+# These cover standard bank shorthand: the abbreviations that appear on
+# settlement files and reason strings. First match wins, so order matters.
+#
+# They deliberately do NOT cover conversational or Hinglish phrasing
+# ("balance nahi hai", "bank ne mana kar diya"). Enumerating those here would be
+# writing a rule per sentence, and generalising to unseen phrasings is precisely
+# what Tier 3 is for. If a colloquial pattern shows up often enough to be worth a
+# rule, it belongs here — but the claim "the LLM handles what the rules cannot"
+# has to stay true, so do not bulk-import the simulator's phrase list.
+
+- pattern: "(?i)(do not honou?r|decline\\s*05)"
+  cause: DO_NOT_HONOUR
+  confidence: 0.88
+
+- pattern: "(?i)(insuff|low\\s+balance|not\\s+suff)"
+  cause: INSUFFICIENT_FUNDS
+  confidence: 0.92
+
+- pattern: "(?i)(issuer\\s+(down|unavailable)|bank\\s+server\\s+busy)"
+  cause: ISSUER_DECLINE_TEMPORARY
+  confidence: 0.88
+
+- pattern: "(?i)(time\\s*out|no\\s+resp)"
+  cause: NETWORK_TIMEOUT
+  confidence: 0.88
+
+- pattern: "(?i)(card\\s+expired|exp\\s+date\\s+invalid)"
+  cause: CARD_EXPIRED
+  confidence: 0.94
+
+- pattern: "(?i)(mandate\\s+cap|mndt\\s+limit|per\\s+txn\\s+limit)"
+  cause: MANDATE_LIMIT_EXCEEDED
+  confidence: 0.92
+
+- pattern: "(?i)(mandate\\s+expired|mndt\\s+validity)"
+  cause: MANDATE_EXPIRED
+  confidence: 0.92
+
+- pattern: "(?i)(mandate\\s+cancelled|umn\\s+revoked)"
+  cause: MANDATE_REVOKED
+  confidence: 0.92
+
+- pattern: "(?i)(afa\\s+failed|otp\\s+not\\s+entered)"
+  cause: AUTHENTICATION_FAILED
+  confidence: 0.90
+
+- pattern: "(?i)(a\\/?c\\s+closed|account\\s+closed)"
+  cause: ACCOUNT_CLOSED
+  confidence: 0.93
+
+- pattern: "(?i)(risk\\s+block|fraud\\s+suspect)"
+  cause: RISK_BLOCKED
+  confidence: 0.93
+
+- pattern: "(?i)tech\\s+decline"
+  cause: TECHNICAL_DECLINE_UNKNOWN
+  confidence: 0.70
