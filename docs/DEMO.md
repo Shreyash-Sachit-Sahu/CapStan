@@ -14,15 +14,82 @@ with the screen, the screen wins and this file is stale.
 
 ## Pre-flight
 
-Running and warm before you speak. The tamper endpoint needs the demo profile:
+Start the three pieces in their own terminals, then verify with the script.
+
+```bash
+# terminal 1
+docker compose up -d --wait
+
+# terminal 2  — the profile flag is not optional, see below
+cd backend && ./mvnw -o spring-boot:run "-Dspring-boot.run.profiles=demo"
+
+# terminal 3  — build first, then start. Never rebuild a running server.
+cd frontend && npm run build && npm run start
+
+# then, once all three are up
+bash scripts/demo-preflight.sh
+```
+
+Read the last line. **ALL CHECKS PASSED** means safe to present, and the script
+prints your four tab URLs plus the exact tamper command with the id already
+substituted. Takes ~90 seconds, almost all of it the backtest it runs for you.
+Idempotent — run it again any time, and run it again after any sweep.
+
+The script starts nothing and stops nothing. That is deliberate: an earlier
+version managed the servers itself and it cost two failed runs, because `setsid`
+does not exist in Git Bash and a backgrounded child that inherits the script's
+stdout hangs `| tee` forever after the script has finished. Process lifecycle
+belongs in your terminals where you can watch it. What the script owns is
+ordering and verification, which is where the real failures were.
+
+### The three orderings that break the demo
+
+Every demo failure we have actually had was an ordering error, not a code error.
+All three fail *silently* — the system looks healthy and the beat dies on stage.
+
+**1. Build the frontend before starting it, never while it is running.**
+`next start` holds the build manifest it booted with. Rebuild underneath it and
+the HTML it serves references chunk hashes that are no longer on disk. Every
+route still returns 200 and the front page renders perfectly; the case pages die
+in the browser with `ChunkLoadError`. An HTTP status check will not catch this,
+which is why the script fetches the chunk the HTML actually asks for.
+
+**2. Run the holdout backtest last, after any sweep.**
+`clearExecutionState()` wipes `payment_attempt`, `intervention` and `audit_event`
+**globally** at the start of every run. That is the G11 cross-batch contamination
+fix and it is correct — but it means a sweep leaves only its *final* batch with
+case-level state. Persisted reports live in a different table and survive, so
+the front page looks flawless while tabs 2 and 3 show a single lonely
+`CASE_OPENED` row. Both the 1:35 and 2:25 beats have nothing to point at.
+
+**3. Capture the tamper id after that run, not before.**
+Event ids are sequence-generated and change on every run. An id captured before
+the backtest is a 404 by the time you paste it.
+
+### Doing it by hand
 
 ```bash
 docker compose up -d --wait
-cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
-cd frontend && npm run start
+
+cd backend && ./mvnw -o spring-boot:run "-Dspring-boot.run.profiles=demo"
+# wait for UP:  curl -s localhost:8080/actuator/health
+
+curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:0.05'   # ~80s, LAST run
+
+cd frontend && npm run build && npm run start    # build, then start. Not the other way.
+
+docker compose exec -T postgres psql -U capstan -d capstan -tAc \
+  "select id from audit_event where case_id='8fa8b03a-c0d7-4f16-b6a4-72345f949974' and seq=2;"
 ```
 
-Four tabs, in this order, already loaded:
+`-Dspring-boot.run.profiles=demo` is not optional: the tamper endpoint is
+`@Profile("demo")` and the 1:35 beat 404s without it. Nothing in the UI tells you
+beforehand, so the script probes the endpoint rather than trusting that the flag
+was typed — without the profile there is no handler mapping at all, so it answers
+404, while with the profile a bogus id answers 405. Actuator here exposes only
+`health,info,metrics`, so active profiles cannot be read back directly.
+
+### Four tabs, in this order
 
 | # | URL | Beat |
 |---|---|---|
@@ -31,17 +98,35 @@ Four tabs, in this order, already loaded:
 | 3 | `localhost:3000/cases/a5225e40-474e-4a54-af3e-d35da24dacfa` | 2:25 — model wrong, safe anyway |
 | 4 | `localhost:3000/exceptions` | 3:10 |
 
-**Capture the tamper id before you start.** Event ids change on every run, so
-this is a pre-flight step, never a live subshell:
+Tab 2 should show **7 events and exactly one debit**; tab 3 should show **zero
+debits**. If either is a single `CASE_OPENED` row, ordering rule 2 was violated —
+re-run the pre-flight. The script asserts both counts so you find out now rather
+than on stage.
 
-```bash
-docker compose exec -T postgres psql -U capstan -d capstan -tAc "select id from audit_event where case_id='8fa8b03a-c0d7-4f16-b6a4-72345f949974' and seq=2;"
-```
-
-Paste the number into the 1:35 beat. At the last rehearsal it was `391789`.
+Paste the tamper id into the 1:35 beat; never derive it in a live subshell. No
+example id is recorded here on purpose — it changes on every run, so a number
+written down is a number that is already wrong. The pre-flight prints the current
+one as a ready-to-paste command.
 
 **Nothing you click starts a job.** The cockpit reads a persisted report; a run
 takes ~80 seconds and must never happen on stage.
+
+### If something dies mid-demo
+
+Each server logs to its own terminal, which is the reason they run there.
+
+The common one is an orphaned JVM holding 8080: `spring-boot:run` forks a child,
+so Ctrl-C on the wrapper can leave it behind, and the next start then fails with
+what reads like a config error rather than a port conflict. Find and stop it:
+
+```bash
+netstat -ano | grep :8080          # last column is the PID
+powershell -NoProfile -Command "Stop-Process -Id <PID> -Force"
+```
+
+If the cockpit renders but a case page is blank, that is ordering rule 2 — re-run
+the pre-flight. If a case page throws `ChunkLoadError` in the browser console,
+that is rule 1 — stop the frontend, `npm run build`, then `npm run start`.
 
 ---
 

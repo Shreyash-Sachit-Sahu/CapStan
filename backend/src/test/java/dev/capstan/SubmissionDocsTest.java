@@ -150,6 +150,75 @@ class SubmissionDocsTest {
     private static String pp(JsonNode rate) {
         return String.format("%.2fpp", rate.asDouble() * 100);
     }
+
+    /**
+     * Two orderings in the pre-flight are load-bearing, and both fail silently
+     * when reversed — the system looks healthy and the beat dies on stage. They
+     * are asserted by position rather than presence, because both commands are
+     * present in either order.
+     *
+     * <p>Rebuilding the frontend under a running {@code next start} leaves it
+     * serving HTML that references chunk hashes no longer on disk: every route
+     * still returns 200 and only the case pages break, in the browser. Capturing
+     * the tamper event id before the backtest yields an id that the run then
+     * replaces, so the 1:35 beat 404s on a pasted number.
+     */
+    @Test
+    void theDemoPreflightKeepsItsTwoLoadBearingOrderings() throws IOException {
+        String demo = read(DEMO);
+
+        int build = demo.indexOf("npm run build");
+        int start = demo.indexOf("npm run start");
+        assertThat(build).as("DEMO.md no longer mentions `npm run build`").isNotEqualTo(-1);
+        assertThat(start).as("DEMO.md no longer mentions `npm run start`").isNotEqualTo(-1);
+        assertThat(build)
+                .as("`npm run build` must come before `npm run start` — rebuilding under a "
+                        + "running server serves HTML pointing at chunk hashes that are gone, "
+                        + "and every route still returns 200 while the case pages "
+                        + "ChunkLoadError")
+                .isLessThan(start);
+
+        int run = demo.indexOf("/api/backtest/run?batch=holdout");
+        int tamperId = demo.indexOf("and seq=2");
+        assertThat(run).as("DEMO.md no longer runs the holdout backtest in pre-flight")
+                .isNotEqualTo(-1);
+        assertThat(tamperId).as("DEMO.md no longer captures the tamper event id").isNotEqualTo(-1);
+        assertThat(run)
+                .as("the holdout run must come before the tamper-id capture — event ids are "
+                        + "sequence-generated and the run replaces them, so an id captured "
+                        + "first is a 404 by the time it is pasted on stage")
+                .isLessThan(tamperId);
+    }
+
+    /**
+     * The pre-flight script is the thing standing between a rehearsed demo and a
+     * blank case page, so it has to exist and has to enforce the ordering it
+     * documents rather than merely describing it.
+     */
+    @Test
+    void thePreflightScriptExistsAndEnforcesWhatItClaims() throws IOException {
+        String script = read(Path.of("..", "scripts", "demo-preflight.sh"));
+
+        assertThat(script)
+                .as("the pre-flight must assert the demo cases have execution state; without "
+                        + "it a sweep silently blanks tabs 2 and 3 and nobody finds out "
+                        + "until the 1:35 beat")
+                .contains("from payment_attempt where case_id=");
+        assertThat(script)
+                .as("the pre-flight must fetch the chunk the served HTML references — an HTTP "
+                        + "status check passes against a stale build")
+                .contains("_next/static/chunks/");
+        assertThat(script)
+                .as("the pre-flight must verify the demo profile from Spring's startup line; "
+                        + "without it the tamper beat 404s and nothing in the UI warns you")
+                .contains("profile");
+
+        int scriptBuild = script.indexOf("npm run build");
+        int scriptStart = script.indexOf("npm run start");
+        assertThat(scriptBuild)
+                .as("the script must build the frontend before starting it")
+                .isLessThan(scriptStart);
+    }
     private static String read(Path path) throws IOException {
         assertThat(Files.exists(path))
                 .as("%s not found from %s — the scan would pass vacuously",
