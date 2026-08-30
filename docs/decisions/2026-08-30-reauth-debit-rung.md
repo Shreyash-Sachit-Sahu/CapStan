@@ -102,3 +102,75 @@ cannot represent that is not representing the domain.
 
 The falsifiable content is the table above. If the measured numbers fall outside
 those ranges, that is reported as a miss rather than reframed.
+
+---
+
+# Outcome, recorded after measuring
+
+**It undershot.** Five of seven predictions landed inside their ranges; the two
+headline figures did not.
+
+| quantity | predicted | measured | |
+|---|---:|---:|:--|
+| Capstan, holdout rupee recovery | 41–44% | **38.68%** | miss, low |
+| Gap vs baseline, holdout | +11 to +14pp | **+8.42pp** | miss, low |
+| `re-auth routing` ablation | +7 to +10pp | **+5.13pp** | miss, low |
+| Baseline | unchanged | 30.26% | hit |
+| Oracle upper bound | unchanged | 83.29% | hit |
+| Debit attempts | 390–405 | 399 | hit |
+| `escalatedToHuman` | 48–58 | 58 | hit |
+| duplicates / safety failures | 0 / 0 | 0 / 0 | hit |
+
+Captured 5.13pp of the 10.44pp theoretical — 49%, against the ~85% predicted.
+
+## Both predicted failure modes were wrong
+
+The note named the billing-cycle boundary and G8's comms cap. Neither did
+anything. The actual cause:
+
+| cause | cases | re-auth completed | recovered | blocked by |
+|---|---:|---:|---:|---|
+| `CARD_EXPIRED` | 27 | 12 | **12** | — |
+| `AUTHENTICATION_FAILED` | 10 | 4 | **4** | — |
+| `MANDATE_LIMIT_EXCEEDED` | 21 | 8 | **0** | G4 ×21 |
+| `MANDATE_EXPIRED` | 6 | 2 | **0** | G3 |
+
+Where re-authorisation was the only obstacle, conversion to recovery was
+**16 for 16**. Where the mandate itself was still non-compliant, the guardrails
+refused — and were right to. A completed re-authorisation does not refresh the
+mandate in this model: the per-transaction cap stays breached, the validity
+window stays lapsed, and debiting against either would be rejected by the issuer
+anyway.
+
+The arithmetic reconciles: the two blocked causes carry ₹15,501 of expectation,
+4.37pp, and 5.13 + 4.37 = 9.50pp against a 9pp central estimate. The model of the
+mechanism was right; the assumption that a completed re-auth clears every mandate
+constraint was wrong.
+
+## Not modelled, deliberately — and its cost is measured
+
+This is **not** the same category as the `railPermits` correction. That one was
+factually wrong in any payment system: an SMS does not re-authorise a mandate.
+What a re-authorisation *refreshes* genuinely varies — re-registering a
+card-on-file with a new instrument does clear an expiry, while a UPI Autopay
+per-transaction cap is a property of the mandate registration and raising it
+requires the customer to approve a *new* mandate rather than re-confirm the old
+one. A model in which a completed re-auth does not silently raise a breached cap
+is defensible, arguably more correct than the alternative.
+
+So it is stated rather than modelled, with a magnitude from two independent
+routes that agree to 0.01pp:
+
+- **Oracle expectation:** ₹15,501 forgone = **4.37pp**
+- **Measured by the `over-cap substitution` ablation:** removing the binding cap
+  moves recovery 38.68% → 43.04% = **4.36pp**
+
+27 of the 64 re-auth cases carry a mandate constraint that re-authorisation does
+not clear here. In production the ceiling would be higher if the re-auth flow
+issued a fresh mandate, and lower if it did not.
+
+## Resolution note
+
+Three mechanisms measured **+0.71pp** each on the holdout. One case at the median
+ticket is 0.34pp, so those are one-to-two-case effects at the resolution limit of
+a 300-case batch. The ten-seed sweep is the better read for anything that small.
