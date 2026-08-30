@@ -239,9 +239,65 @@ public class BacktestRunner {
                 update recovery_case
                    set status = case when diagnosed_cause is null then 'OPEN' else 'DIAGNOSED' end,
                        terminal_reason = null,
-                       updated_at = first_failed_at
+                       updated_at = first_failed_at,
+                       -- Observed re-authorisation is execution state and has to
+                       -- go with the rest of it. Left behind, the database
+                       -- remembers a completed re-auth while the gateway forgets,
+                       -- and the second run of a batch diverges from the first.
+                       reauth_requested_at = null,
+                       reauth_completed_at = null
                  where batch_label is not null
                 """).update();
+
+        requireCleanSlate();
+    }
+
+    /**
+     * Refuses to proceed if any execution state survived the reset.
+     *
+     * <p>The guard is structural on purpose. Correctness previously depended on
+     * remembering to clear each stateful column, and a column added later —
+     * {@code reauth_completed_at} — was missed, which made a second run of the
+     * same batch quietly disagree with the first by about 0.7pp. Someone will
+     * forget again; this fails loudly the moment they do rather than producing a
+     * plausible wrong number.
+     */
+    private void requireCleanSlate() {
+        Map<String, Integer> residue = new LinkedHashMap<>();
+        residue.put("payment_attempt", count("select count(*) from payment_attempt"));
+        residue.put("intervention", count("select count(*) from intervention"));
+        residue.put("outbox", count("select count(*) from outbox"));
+        residue.put("reauth_requested_at", count("""
+                select count(*) from recovery_case
+                 where batch_label is not null and reauth_requested_at is not null
+                """));
+        residue.put("reauth_completed_at", count("""
+                select count(*) from recovery_case
+                 where batch_label is not null and reauth_completed_at is not null
+                """));
+        residue.put("non-idle case status", count("""
+                select count(*) from recovery_case
+                 where batch_label is not null and status not in ('OPEN', 'DIAGNOSED')
+                """));
+
+        String dirty = residue.entrySet().stream()
+                .filter(e -> e.getValue() > 0)
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .reduce((a, b) -> a + ", " + b)
+                .orElse(null);
+
+        if (dirty != null) {
+            throw new IllegalStateException(
+                    "execution state survived the reset (" + dirty + "). A run against "
+                            + "dirty state does not reproduce: the database would remember "
+                            + "what the gateway forgot. Add the new column to "
+                            + "clearExecutionState().");
+        }
+    }
+
+    private int count(String sql) {
+        Integer n = jdbc.sql(sql).query(Integer.class).single();
+        return n == null ? 0 : n;
     }
 
     // ---------------------------------------------------------------- reads

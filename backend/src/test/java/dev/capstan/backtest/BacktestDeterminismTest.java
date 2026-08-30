@@ -50,6 +50,10 @@ class BacktestDeterminismTest {
         for (int i = 0; i < 6; i++) {
             fixture.recoverableCase(t0.plusSeconds(i * 3600L), 100_000L + i * 25_000L);
         }
+        // At least one case that walks the re-auth path. Without it the fixture
+        // never writes reauth_requested_at, so a second run cannot diverge from
+        // the first and this test passes while the bug it exists to catch is live.
+        fixture.reauthCase(t0.plusSeconds(7 * 3600L), 180_000L);
     }
 
     @AfterEach

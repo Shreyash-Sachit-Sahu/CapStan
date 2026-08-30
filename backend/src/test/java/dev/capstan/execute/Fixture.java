@@ -29,6 +29,34 @@ public class Fixture {
                 true, "ANY", 1.0);
     }
 
+    /**
+     * A case whose ladder debits BEFORE it asks for re-authorisation, and whose
+     * re-auth never converts.
+     *
+     * <p>Both halves are required to expose state leaking between runs.
+     * AUTHENTICATION_FAILED is [RAIL_SWITCH, REAUTH_LINK, SCHEDULED_RETRY,
+     * ABANDON], so rung 0 is a debit that G12 sees as N/A on a clean case. If a
+     * previous run left reauth_requested_at set with completion null, G12 blocks
+     * that same rung instead -- one fewer debit attempt, and the two runs
+     * disagree. A case that always converts cannot show this, which is why the
+     * first version of this fixture passed while the bug was live.
+     */
+    public UUID reauthCase(Instant firstFailedAt, long amountPaise) {
+        UUID caseId = newCase(firstFailedAt, amountPaise, firstFailedAt.plusSeconds(30 * 86400),
+                true, "REAUTH_REQUIRED", 1.0);
+        jdbc.sql("""
+                update recovery_case set diagnosed_cause = 'AUTHENTICATION_FAILED',
+                       raw_error_reason = 'payment_authentication_failed'
+                 where id = :id
+                """).param("id", caseId).update();
+        jdbc.sql("""
+                update case_oracle set true_cause = 'AUTHENTICATION_FAILED',
+                       nudge_sensitivity = 0.0
+                 where case_id = :id
+                """).param("id", caseId).update();
+        return caseId;
+    }
+
     public UUID newCase(Instant firstFailedAt, long amountPaise, Instant billingCycleEnd,
                  boolean recoverable, String requiredChannel, double successProbability) {
         UUID customerId = jdbc.sql("""
