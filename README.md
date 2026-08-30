@@ -70,8 +70,10 @@ both are zero. They are rendered hatched in the cockpit and we do not claim them
 
 ## What we got wrong, and how we know
 
-This section is ordered by what each error cost, largest first. Two of the four
-corrections went against our own interest.
+Ordered by what each error cost, largest first. Every bug we found happened to
+run in our favour once fixed — that is stated plainly below rather than dressed
+up, and the decisions that genuinely went against our own interest are tabulated
+separately.
 
 ### The baseline was being handed a quarter of the money (−10.58pp, to them)
 
@@ -96,10 +98,26 @@ commit `d23c26a`.
 | Oracle upper bound | 83.29% | 83.29% | −0.00pp |
 
 We fixed it knowing it would help us, on the test *would we fix this if it hurt
-us*. We would, and twice we did: two harness bugs found earlier in the same phase
-— cases being decided before they had failed, and the issuer circuit breaker
-contaminated across batches — both flattered the baseline, and fixing them cost
-Capstan about **22 points**.
+us*. That test is worth nothing unless something backs it, so here is the honest
+accounting — and this correction is not the evidence.
+
+**Every measurement error we found happened to run in our favour once fixed.**
+Two harness bugs — cases being decided before they had failed, and the issuer
+circuit breaker contaminated across batches — were *depressing* Capstan by
+roughly 22 and 28 points respectively. Fixing them returned that to us. A third,
+a run-to-run state leak, was worth about 0.7pp, also to us. We are not going to
+present any of those as sacrifices; they were bugs that happened to be expensive
+for the arm that found them.
+
+The decisions that actually cost us are these four, and they are the ones to
+check:
+
+| decision | what it cost us |
+|---|---|
+| Gave the holdout a narration vocabulary our rules had never seen | Headline accuracy reported as **0.9533** rather than the **0.9833** the tuning set scores |
+| Declined to model what a re-authorisation refreshes | **4.36pp** of our own expectation, forgone |
+| Left `attempt_success_prob` independence in place | Correcting it would raise our numbers; it favours the arm we beat |
+| Refused to add a cost model | Pricing attempts, churn or refunds would flip the ranking our way |
 
 ### Every headline prediction we pre-registered came in low
 
@@ -348,10 +366,12 @@ smaller honest one.
 
 The entries that matter most are `GUARDRAIL_BLOCKED`, `COMMS_SUPPRESSED` and
 `DEBIT_BLOCKED`. A log of completed actions cannot tell a bounded system apart
-from an unbounded one that happened not to hit a limit. How many refusals a run
-produces depends on where its cases sit in their ladders — this one recorded 20
-against 113 decisions; an earlier pass over cases at earlier rungs recorded 97
-against 118. A suppressed nudge reads as `Did not message the customer. G7 Quiet
+from an unbounded one that happened not to hit a limit. On the holdout run this is **408 recorded
+refusals against 737 decisions** — 266 `GUARDRAIL_BLOCKED` and 142
+`COMMS_SUPPRESSED`. (The cockpit's guardrail table counts the same events
+per-guardrail and totals 407; it excludes `DEBIT_BLOCKED`, which carries no
+guardrail id because the invariant that raises it is a precondition rather than a
+guardrail.) A suppressed nudge reads as `Did not message the customer. G7 Quiet
 hours: quiet hours 21:00-09:00 IST; holding until 09:15 IST`, rendered from a
 template, never a model. The ledger is the one place a paraphrase must not drift.
 
@@ -399,8 +419,13 @@ carries the result and its honesty in one object: you cannot show the pawls
 without also showing how far short of the stop they are.
 
 **Held actions are in the timeline, greyed and struck.** `COMMS_SUPPRESSED`,
-`GUARDRAIL_BLOCKED`, `DEBIT_BLOCKED` and cancellations each render with the
-guardrail that stopped them. A timeline showing only what happened cannot
+`GUARDRAIL_BLOCKED` and `DEBIT_BLOCKED` each render with the guardrail or
+precondition that stopped them. The renderer also handles
+`INTERVENTION_CANCELLED`, but you will not find one in backtest data: the tick
+loop holds a case in flight while an attempt is unresolved, so no sibling
+intervention is ever queued for the reconciler to supersede. The path is covered
+by `NoDoubleChargeUnderTimeoutTest`, which constructs the queued retry
+explicitly, and we did not seed a case to make the row appear on screen. A timeline showing only what happened cannot
 demonstrate boundedness — the nudge that was *not* sent at 22:40 IST because of
 quiet hours makes the argument by itself. Blocks are drawn in a desaturated
 `--halt`, never alarm red: a guardrail firing is the system working.

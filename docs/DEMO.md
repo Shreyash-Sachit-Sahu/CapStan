@@ -4,8 +4,11 @@ Four minutes. Rehearse twice. **Record a fallback capture the night before**
 regardless of how the live demo is meant to run — venue wifi is the most common
 reason a working system demos badly.
 
-Every number below is in `docs/report_holdout.json`, committed. If a figure here
-disagrees with the screen, the screen wins and this file is stale.
+Every number below is in the committed reports — `docs/report_holdout.json`
+carries the sweep, the single-batch run, the ablations and the equal-budget
+tables; `docs/report_diagnosis_holdout.json` and
+`docs/report_exceptions_holdout.json` carry the rest. If a figure here disagrees
+with the screen, the screen wins and this file is stale.
 
 ---
 
@@ -162,7 +165,7 @@ a row with a count. The trail records what we chose not to do."*
 
 **Tab 4.**
 
-> "Sixty-seven recoverable cases we did not get. They're all here with what went
+> "On this batch — one of the ten — sixty-seven recoverable cases we did not get. They're all here with what went
 > wrong and what a human should do next.
 >
 > They aren't a diagnosis problem — we diagnosed most of them correctly. They're
@@ -170,7 +173,8 @@ a row with a count. The trail records what we chose not to do."*
 > stopped. The baseline doesn't stop.
 >
 > And these two groups" *(point at correctly abandoned, correctly escalated)*
-> "are not failures. 63 were never recoverable and 47 need a human. A system that
+> "are not failures. On the same batch, 63 were never recoverable and 47 need a
+> human. A system that
 > knows when to stop has to be allowed to stop."
 
 ---
@@ -181,9 +185,12 @@ a row with a count. The trail records what we chose not to do."*
 > comparison is against a fair baseline scored by the same oracle, we publish the
 > ceiling, and we publish the misses.
 >
-> We also found three bugs in our own measurement harness that were flattering
-> the baseline, fixed them, and reported that they cost us 22 points. The README
-> has the audit."
+> And we made four calls against our own interest. We gave the holdout a
+> vocabulary our rules had never seen, and our reported accuracy dropped three
+> points. We left a simulator bias in place that would raise our numbers if we
+> corrected it. We declined to model a limitation worth four points of our own
+> expectation. And we refused a cost model that would flip the ranking our way.
+> The README has the full audit.""
 
 ---
 
@@ -204,8 +211,12 @@ a row with a count. The trail records what we chose not to do."*
 **"How do we know your numbers aren't rigged?"**
 Same oracle for both arms, package-isolated from the agent with a source-scanning
 test that fails the build if the agent names it. Ceiling published. Misses
-published in full. Ten seeds with IQR, not one lucky run. And three harness bugs
-that were *helping* the baseline are documented with what fixing them cost us.
+published in full. Ten seeds with IQR, not one lucky run.
+
+And the audit section documents every measurement error we found, including that
+all of them had been depressing Capstan rather than the baseline — so fixing them
+helped us, and we say so instead of claiming credit for it. The corrections that
+did cost us are listed separately, with what each one cost.
 
 **"What's actually AI here versus rules?"**
 Diagnosis only, and only the part rules cannot reach. Tier 1 is a deterministic
@@ -274,4 +285,10 @@ was measured, with a predicted direction, in `docs/decisions/`. The largest one
 removed 10.58 points from the **baseline** — it had been treating a generic
 dunning SMS as a completed mandate re-authorisation, which is false in any
 payment system. The test we applied each time was *would we make this change if
-it hurt us*. One of them did hurt us, by about 22 points, and we made it.
+it hurt us* — and honestly, none of those three did. Every measurement error we
+found had been depressing Capstan, so fixing it returned points to us; the
+arrival-bound bug alone was worth about 22. The evidence for that test is
+elsewhere: a holdout vocabulary our rules had never seen, at three points of
+reported accuracy; a simulator bias left uncorrected because correcting it would
+help us; a limitation worth 4.4 points we chose to state rather than model; and a
+cost model we refused because it would flip the ranking our way.
