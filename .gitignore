@@ -1,0 +1,39 @@
+# Secrets — never commit. See docs/briefs/phase-09 hardening pass.
+.env
+*.pem
+
+# Java / Maven
+target/
+!.mvn/wrapper/maven-wrapper.properties
+
+# Node
+node_modules/
+.next/
+
+# Python
+__pycache__/
+.venv/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Generated batches. Regenerable byte-identically from the seed
+# (simulator/requirements.txt pins the versions); the manifests are the durable
+# record of what a batch contained and ARE committed.
+fixtures/*.json
+!fixtures/*_manifest.json
+tail -6 .gitignore
+
+# Application logs. Never committed: they carry the resolved DB identity
+# and can contain upstream error bodies.
+*.log
+*.err
+
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/next-env.d.ts

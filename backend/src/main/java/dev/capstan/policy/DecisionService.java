@@ -32,8 +32,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class DecisionService {
 
     private static final Logger log = LoggerFactory.getLogger(DecisionService.class);
+    // ISO-8601, not epoch seconds. Jackson defaults to numeric timestamps, which
+    // the cockpit read as epoch *milliseconds* and rendered as January 1970.
+    // decision_json is read by humans and by the UI; it should say what it means.
     private static final ObjectMapper JSON = new ObjectMapper()
-            .findAndRegisterModules();
+            .findAndRegisterModules()
+            .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     /** G11's window: how far back "recent" reaches when measuring issuer health. */
     private static final Duration BREAKER_WINDOW = Duration.ofMinutes(15);

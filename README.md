@@ -325,6 +325,60 @@ to match it. The round-trip test goes through the database; asserting that
 serialising twice in-process gives the same bytes would have gone green over a
 broken path.
 
+## The cockpit
+
+Three routes, no more. `/` is the batch view, `/cases/[id]` is one case end to
+end, `/exceptions` is what did not recover and whether that was right.
+
+```bash
+cd frontend && npm install && npm run build && npm run start   # localhost:3000
+```
+
+**It reads the last measurement rather than starting one.** A backtest run is
+synchronous and takes about eighty seconds; a judge looks for ninety. Runs are
+persisted to `backtest_report` and the cockpit reads `GET /api/backtest/report`,
+so the page paints immediately. With nothing measured yet the empty state is the
+exact sequence of curl commands that produces a measurement, because an empty
+state should be an instruction.
+
+**Two sets of numbers, always labelled.** The hero is the ten-batch sweep median
+— the defensible headline. Everything below the fold is a single batch and says
+so. Two different figures for the same three arms with no indication of which is
+which is how a reader concludes you showed whichever was higher.
+
+**The hero is a ratchet, not a big number on a gradient.** One track from ₹0 to
+total-at-risk, the two arms as pawls, the oracle ceiling as a hard stop. It
+carries the result and its honesty in one object: you cannot show the pawls
+without also showing how far short of the stop they are.
+
+**Held actions are in the timeline, greyed and struck.** `COMMS_SUPPRESSED`,
+`GUARDRAIL_BLOCKED`, `DEBIT_BLOCKED` and cancellations each render with the
+guardrail that stopped them. A timeline showing only what happened cannot
+demonstrate boundedness — the nudge that was *not* sent at 22:40 IST because of
+quiet hours makes the argument by itself. Blocks are drawn in a desaturated
+`--halt`, never alarm red: a guardrail firing is the system working.
+
+**The why-panel shows every guardrail, not just the ones that fired.** All twelve
+with `ALLOW` / `DEFER` / `BLOCK` / `N/A`. A panel listing only the blocks would be
+advocacy; the claim is that twelve bounds were evaluated and most said yes, which
+is only checkable if they are all there.
+
+**Ablation bars under 1pp are hatched and footnoted.** One case at the median
+ticket is 0.34pp of a 300-case batch, so those are one-to-two-case effects at the
+resolution limit. Drawing them identically to a fifteen-point effect would claim
+more precision than the data has.
+
+Two demo cases are deep-linked from the batch view: the lost-response case that
+reconciled to exactly one debit, and the case where Tier 3 said `DO_NOT_HONOUR`
+at confidence 0.80 on a signal-free payload when the truth was `RISK_BLOCKED` —
+and G10 refused the debit anyway, zero debits.
+
+Fonts are self-hosted at build time by `next/font`, so nothing fetches from a CDN
+at page load and a flaky venue network cannot blank the hero. Auth is absent by
+design: this is a local demo, and a half-built JWT would be worse than none.
+Timestamps are converted to `Asia/Kolkata` in exactly one place, `lib/api.ts` —
+the backend speaks UTC and the boundary lives at the edge.
+
 ## Security posture
 
 Auth is deliberately absent. This is a locally-run demo: the backend binds to

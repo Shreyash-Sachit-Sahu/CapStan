@@ -38,7 +38,9 @@ Below it, in order:
    Put Capstan's costs next to baseline's. Do not hide them below the fold.
 3. Terminal breakdown — a single stacked bar: recovered / abandoned / escalated /
    expired, with escalated labelled as a *correct* outcome.
-4. Guardrail activity — a small table of how many times each of G1–G11 fired.
+4. Guardrail activity — a small table of how many times each of G1–G12 fired.
+   Twelve, not eleven: G12 (re-authorisation pending) was added in Phase 07 and
+   fired 33 times on the holdout.
    This is the "bounded and gated" evidence, made visible.
 
 ### Case view
@@ -131,7 +133,8 @@ else animates except hover states. Respect `prefers-reduced-motion`.
 ```bash
 cd frontend && npm run build && npm run start
 # / renders the bracket with live numbers from the backend
-# /cases/<timeout-case-id> shows CANCELLED intervention + reconcile events
+# /cases/<timeout-case-id> shows ATTEMPT_UNKNOWN -> RECONCILE_ATTEMPTED -> RECOVERED
+#   with exactly one debit. NOT a CANCELLED intervention: see Phase 05 §6.
 # /exceptions shows the missed group non-empty and first
 
 # Quality floor

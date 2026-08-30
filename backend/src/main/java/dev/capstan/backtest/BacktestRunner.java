@@ -31,6 +31,7 @@ public class BacktestRunner {
     private final FixedLadderBaseline baseline;
     private final OracleUpperBound upperBound;
     private final SimulatedGateway gateway;
+    private final ReportStore reports;
 
     public record Report(String batch, int cases, long atRiskPaise, int policyVersion,
                          String inject, Map<String, ArmMetrics> arms) {
@@ -125,8 +126,16 @@ public class BacktestRunner {
             results.put("upperBound", upperBound.compute(caseIds, amounts, firstFailed));
         }
 
-        return new Report(batch, caseIds.size(), atRisk, 1,
+        Report report = new Report(batch, caseIds.size(), atRisk, 1,
                 inject == null ? "none" : inject, results);
+        // An equal-budget run is a different measurement from an unconstrained one
+        // and must not overwrite it.
+        int budget = injectedBudget(inject);
+        if (ablation == Ablation.NONE) {
+            reports.save(budget > 0 ? "budget" : "run", batch,
+                    budget > 0 ? String.valueOf(budget) : "", report);
+        }
+        return report;
     }
 
     public SweepReport sweep(List<String> batches, String inject) {
@@ -148,7 +157,9 @@ public class BacktestRunner {
             median.put(arm, quantile(values, 0.5));
             iqr.put(arm, quantile(values, 0.75) - quantile(values, 0.25));
         }
-        return new SweepReport(batches, median, iqr, runs);
+        SweepReport sweep = new SweepReport(batches, median, iqr, runs);
+        reports.save("sweep", "*", "", sweep);
+        return sweep;
     }
 
     /**
@@ -176,8 +187,10 @@ public class BacktestRunner {
             attribution.put(ablation.label(),
                     round((fullRate - without.recoveryRatePaise()) * 100));
         }
-        return new AblationReport(batch, round(baseRate * 100), round(fullRate * 100),
-                round((fullRate - baseRate) * 100), attribution, runs);
+        AblationReport report = new AblationReport(batch, round(baseRate * 100),
+                round(fullRate * 100), round((fullRate - baseRate) * 100), attribution, runs);
+        reports.save("ablations", batch, "", report);
+        return report;
     }
 
     // ---------------------------------------------------------------- state
@@ -320,6 +333,20 @@ public class BacktestRunner {
         int lo = (int) Math.floor(pos);
         int hi = (int) Math.ceil(pos);
         return sorted.get(lo) + (sorted.get(hi) - sorted.get(lo)) * (pos - lo);
+    }
+
+    /** Reads max_debits_per_case back out of the inject spec, 0 when absent. */
+    private static int injectedBudget(String inject) {
+        if (inject == null) {
+            return 0;
+        }
+        for (String part : inject.split(",")) {
+            String[] kv = part.trim().split("[:=]", 2);
+            if (kv.length == 2 && kv[0].trim().equals("max_debits_per_case")) {
+                return Integer.parseInt(kv[1].trim());
+            }
+        }
+        return 0;
     }
 
     private static double round(double value) {

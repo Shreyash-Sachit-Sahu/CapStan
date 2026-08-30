@@ -18,6 +18,7 @@ public class BacktestController {
 
     private final BacktestRunner runner;
     private final ExceptionList exceptions;
+    private final ReportStore reports;
 
     /** Diagnoses the batch once, so no run ever classifies on the clock. */
     @PostMapping("/prepare")
@@ -53,6 +54,17 @@ public class BacktestController {
             @RequestParam(defaultValue = "v1") String batch,
             @RequestParam(required = false) String inject) {
         return runner.ablations(batch, inject);
+    }
+
+    /**
+     * Everything the cockpit needs, from the last measurement, instantly.
+     *
+     * <p>A run is synchronous and takes about eighty seconds; a judge looks for
+     * ninety. Rendering the dashboard must not start one.
+     */
+    @GetMapping("/report")
+    public Map<String, Object> report(@RequestParam(defaultValue = "holdout") String batch) {
+        return reports.dashboard(batch);
     }
 
     @GetMapping("/exceptions")

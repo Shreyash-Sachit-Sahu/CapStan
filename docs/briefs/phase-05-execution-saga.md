@@ -285,6 +285,16 @@ Reconcile budget: 5 attempts over 30 minutes with exponential backoff. Exhausted
 `ESCALATED`, never `FAILED`. An unresolvable unknown is a human's problem, not a
 retry's.
 
+**Reachability note, measured in Phase 07.** This cancellation path never fires
+during a backtest, and that is a design property rather than a gap. The tick
+loop holds a case IN_FLIGHT while an attempt is unresolved, so the dispatcher
+never queues a sibling intervention for the reconciler to supersede -- there were
+**zero** cancelled interventions across the entire 300-case holdout run. The
+mechanism is proven by NoDoubleChargeUnderTimeoutTest, which constructs the
+queued retry explicitly. Phase 08 must not seed a case to make the cancelled row
+appear on screen: a demo artefact showing something the system did not do is the
+one dishonesty this project has spent nine phases avoiding.
+
 Cancellation must be race-safe: cancel via a conditional update
 (`UPDATE intervention SET outcome='CANCELLED' WHERE id=? AND executed_at IS NULL`)
 and have the worker re-check case status after claiming a message. Belt and
