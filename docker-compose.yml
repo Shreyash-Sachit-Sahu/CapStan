@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: capstan-postgres
+    environment:
+      POSTGRES_DB: capstan
+      POSTGRES_USER: capstan
+      POSTGRES_PASSWORD: capstan_dev_only
+      TZ: UTC
+      PGTZ: UTC
+    ports: ["127.0.0.1:15432:5432"]   # host 5432 = faraday-postgres, 5433 = WSL postgres; container port unchanged
+    volumes:
+      - capstan_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U capstan -d capstan"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: capstan-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes:
+      - capstan_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: capstan-rabbit
+    environment:
+      RABBITMQ_DEFAULT_USER: capstan
+      RABBITMQ_DEFAULT_PASS: capstan_dev_only
+    ports: ["5672:5672", "15672:15672"]
+    volumes:
+      - capstan_rabbit:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  capstan_pg:
+  capstan_redis:
+  capstan_rabbit:

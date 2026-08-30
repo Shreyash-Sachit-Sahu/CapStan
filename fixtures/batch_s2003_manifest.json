@@ -1,0 +1,100 @@
+{
+  "generator_version": 4,
+  "narration_pool": "holdout",
+  "seed": 2003,
+  "cases": 300,
+  "cycle_start": "2026-09-01T00:00:00Z",
+  "billing_cycle_end": "2026-10-06T00:00:00Z",
+  "cycle_days": 35,
+  "at_risk_paise": 38694641,
+  "at_risk_rupees": 386946.41,
+  "recoverable_by_oracle": 242,
+  "debit_already_succeeded": 6,
+  "risk_flagged_customers": 15,
+  "risk_flagged_but_recoverable": 6,
+  "error_taxonomy": {
+    "shape": "razorpay error object: code (coarse class) + reason (specific cause)",
+    "reasons_are_published_razorpay_values": true,
+    "sources": [
+      "https://razorpay.com/docs/errors/",
+      "https://razorpay.com/docs/errors/payments/list/",
+      "https://razorpay.com/docs/payments/recurring-payments/emandate/errors/"
+    ],
+    "note": "mandate_not_active covers both revoked and expired; Razorpay does not distinguish them, so the diagnosis layer resolves it from mandate.valid_until rather than asking the classifier to guess."
+  },
+  "obscured": {
+    "count": 45,
+    "share": 0.15,
+    "meaning": "bank declined without disclosing a reason; reason field is generic",
+    "narration_reveals_share": 0.75,
+    "colloquial_share_of_revealing": 0.5
+  },
+  "undecidable_from_payload": 9,
+  "accuracy_ceiling": 0.97,
+  "ticket_distribution": {
+    "kind": "lognormal",
+    "median_paise": 49900,
+    "sigma": 1.4,
+    "floor_paise": 4900,
+    "cap_paise": 1499900,
+    "out_of_range_handling": "resampled, not clipped",
+    "realised_percentiles_paise": {
+      "p10": 13505,
+      "p50": 57645,
+      "p75": 142889,
+      "p90": 329025,
+      "p99": 1084891,
+      "max": 1493451
+    }
+  },
+  "cause_distribution": {
+    "target": {
+      "INSUFFICIENT_FUNDS": 0.32,
+      "ISSUER_DECLINE_TEMPORARY": 0.12,
+      "DO_NOT_HONOUR": 0.11,
+      "CARD_EXPIRED": 0.09,
+      "NETWORK_TIMEOUT": 0.08,
+      "MANDATE_LIMIT_EXCEEDED": 0.07,
+      "MANDATE_REVOKED": 0.06,
+      "AUTHENTICATION_FAILED": 0.05,
+      "ACCOUNT_CLOSED": 0.04,
+      "RISK_BLOCKED": 0.03,
+      "MANDATE_EXPIRED": 0.02,
+      "TECHNICAL_DECLINE_UNKNOWN": 0.01
+    },
+    "realised_counts": {
+      "INSUFFICIENT_FUNDS": 96,
+      "ISSUER_DECLINE_TEMPORARY": 36,
+      "DO_NOT_HONOUR": 33,
+      "CARD_EXPIRED": 27,
+      "NETWORK_TIMEOUT": 24,
+      "MANDATE_LIMIT_EXCEEDED": 21,
+      "MANDATE_REVOKED": 18,
+      "AUTHENTICATION_FAILED": 15,
+      "ACCOUNT_CLOSED": 12,
+      "RISK_BLOCKED": 9,
+      "MANDATE_EXPIRED": 6,
+      "TECHNICAL_DECLINE_UNKNOWN": 3
+    }
+  },
+  "reason_counts": {
+    "insufficient_funds": 82,
+    "payment_declined": 37,
+    "payment_failed": 34,
+    "card_expired": 24,
+    "mandate_not_active": 20,
+    "bank_technical_error": 18,
+    "transaction_limit_exceeded": 18,
+    "bank_account_invalid": 11,
+    "issuer_technical_error": 11,
+    "invalid_response_from_gateway": 10,
+    "gateway_technical_error": 9,
+    "incorrect_otp": 9,
+    "payment_risk_check_failed": 5,
+    "server_error": 3,
+    "otp_expired": 3,
+    "authentication_failed": 2,
+    "request_timed_out": 2,
+    "debit_instrument_blocked": 2
+  }
+}

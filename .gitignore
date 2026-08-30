@@ -24,8 +24,10 @@ Thumbs.db
 # Generated batches. Regenerable byte-identically from the seed
 # (simulator/requirements.txt pins the versions); the manifests are the durable
 # record of what a batch contained and ARE committed.
-fixtures/*.json
-!fixtures/*_manifest.json
+# Fixtures are committed. They are generated and deterministic -- `generate.py`
+# with the same seed reproduces them byte for byte -- but a submission that
+# cannot be run from a clean clone without a Python toolchain is not a
+# submission. 5.4MB total, which is cheaper than the alternative.
 tail -6 .gitignore
 
 # Application logs. Never committed: they carry the resolved DB identity

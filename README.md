@@ -437,10 +437,90 @@ is not reachable in the default profile.
 
 ## Run it
 
+Verified from a clean `git clone` into an empty directory. Requirements: Docker,
+JDK 21, Node 24. No API key is needed — without one, diagnosis runs Tier 1 only
+and abstains on the rest, which is the documented degraded path.
+
+**1 — infrastructure and backend**
+
 ```bash
-docker compose up -d --wait          # postgres, redis, rabbitmq
-cd backend && ./mvnw spring-boot:run # applies Flyway migrations on startup
+docker compose up -d --wait            # postgres :15432, redis, rabbitmq
+cd backend && ./mvnw spring-boot:run   # applies V1–V9 on startup
 ```
 
-Postgres publishes on `127.0.0.1:15432`, not 5432 — see `docker-compose.yml` for
-why. The app logs which database it actually reached at startup.
+Postgres publishes on `127.0.0.1:15432`, not 5432, because 5432 was already
+taken on the machine this was built on. The app logs which database it actually
+reached at startup — PostgreSQL returns the same error for an unknown role as
+for a bad password, so a wrong-port connection otherwise reads as a credentials
+bug.
+
+**2 — load a batch and diagnose it once**
+
+```bash
+curl -X POST 'localhost:8080/api/admin/batch/load?batch=holdout' \
+  -H 'Content-Type: application/json' --data-binary @fixtures/batch_holdout.json
+curl -X POST 'localhost:8080/api/backtest/prepare?batch=holdout'
+```
+
+`prepare` classifies every case once and persists the result. Runs refuse to
+start against an undiagnosed batch rather than classifying on the clock — Tier 3
+is throttled to one call per four seconds, so diagnosing inside the tick loop
+would turn a 90-second run into an afternoon.
+
+**3 — measure**
+
+```bash
+curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:0.05'
+```
+
+About 80 seconds. The result is persisted, which is what the cockpit reads.
+
+**4 — the cockpit**
+
+```bash
+cd frontend && npm install && npm run build && npm run start   # localhost:3000
+```
+
+### Reproducing the headline numbers
+
+The sweep is ten distinct batches, not ten replays — the simulator is
+deterministic per seed and the gateway derives every roll from the idempotency
+key, so re-running one batch ten times would report an IQR of zero and imply
+variance had been measured when it had not.
+
+```bash
+for s in 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010; do
+  curl -X POST "localhost:8080/api/admin/batch/load?batch=s$s" \
+    -H 'Content-Type: application/json' --data-binary @fixtures/batch_s$s.json
+  curl -X POST "localhost:8080/api/backtest/prepare?batch=s$s"
+done
+curl -X POST 'localhost:8080/api/backtest/sweep?batches=s2001,s2002,s2003,s2004,s2005,s2006,s2007,s2008,s2009,s2010&inject=timeout_rate:0.05'
+curl -X POST 'localhost:8080/api/backtest/ablations?batch=holdout&inject=timeout_rate:0.05'
+```
+
+Roughly 25 minutes end to end. Committed output for comparison is in
+[`docs/report_holdout.json`](docs/report_holdout.json).
+
+### Regenerating the fixtures
+
+Committed rather than generated on first run, so the repo works without a Python
+toolchain. They are reproducible byte for byte:
+
+```bash
+cd simulator && py -3.12 -m venv .venv && ./.venv/Scripts/pip install -r requirements.txt
+./.venv/Scripts/python generate.py --seed 1337 --narration-pool holdout \
+  --out ../fixtures/batch_holdout.json
+```
+
+### With an LLM key
+
+Optional. Copy `.env.example` to `.env` and set `GEMINI_API_KEY`. Without it the
+cascade still resolves 75% of cases deterministically at 1.00 accuracy and
+abstains on the rest to `UNDIAGNOSED`, which is non-retryable — absence of a
+diagnosis never reads as permission to debit.
+
+### The demo profile
+
+The ledger tamper endpoint exists only under `-Dspring-boot.run.profiles=demo`
+and logs a warning at startup when active. It is not reachable in the default
+profile; `SubmissionDocsTest` and the `@Profile` audit in `docs/DEMO.md` cover it.

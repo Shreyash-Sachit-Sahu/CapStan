@@ -28,6 +28,15 @@ Four tabs, in this order, already loaded:
 | 3 | `localhost:3000/cases/a5225e40-474e-4a54-af3e-d35da24dacfa` | 2:25 — model wrong, safe anyway |
 | 4 | `localhost:3000/exceptions` | 3:10 |
 
+**Capture the tamper id before you start.** Event ids change on every run, so
+this is a pre-flight step, never a live subshell:
+
+```bash
+docker compose exec -T postgres psql -U capstan -d capstan -tAc "select id from audit_event where case_id='8fa8b03a-c0d7-4f16-b6a4-72345f949974' and seq=2;"
+```
+
+Paste the number into the 1:35 beat. At the last rehearsal it was `391789`.
+
 **Nothing you click starts a job.** The cockpit reads a persisted report; a run
 takes ~80 seconds and must never happen on stage.
 
@@ -37,15 +46,26 @@ takes ~80 seconds and must never happen on stage.
 
 **Tab 1. Point at the ratchet scale. Do not mention the stack.**
 
-> "Three hundred failed mandate debits. ₹3.2 lakh at risk. A standard fixed retry
-> ladder — T+1, T+3, T+5 — recovers 29% of that. Capstan recovers 42%. If you had
-> perfect knowledge in advance, the ceiling is 79%.
+> "Three thousand failed mandate debits, across ten independently generated
+> batches. **₹36.5 lakh** at risk.
 >
-> Ten different batches, median. Capstan is ahead on all ten."
+> A standard fixed retry ladder — T+1, T+3, T+5 — recovers **₹10.9 lakh** of
+> that. Capstan recovers **₹15.2 lakh**. Four point three lakh more, from the
+> same failures.
+>
+> As a share of value at risk, median across the ten: **29%** for the ladder,
+> **42%** for us. With perfect foresight the ceiling is **79%**. We're ahead on
+> all ten batches."
 
-Numbers on screen: **28.94% / 41.76% / 79.00%**, median delta **+12.51pp**.
+Everything spoken here is the sweep, and the ratchet on screen is the sweep.
+**Do not quote a single-batch rupee figure over this chart** — ₹3.5 lakh is one
+batch of the ten, and a judge doing the arithmetic gets a number that does not
+reconcile.
 
----
+Percentages are spoken as whole numbers on purpose: ₹10.9 / ₹36.5 lakh is 29.8%
+and the median of the per-batch rates is 28.94%. Both are "29%". Quoting either
+to two decimals invites a mismatch, because a median of rates is not the
+aggregate ratio.
 
 ## 0:30 — 1:05 · The number that matters more
 
@@ -102,10 +122,10 @@ don't claim them."*
 > "Every one of those events is hash-chained and the table is append-only by
 > database trigger."
 
-**Now run the tamper endpoint** (second monitor or a terminal beside the browser):
+**Now run the tamper endpoint** with the id you noted in pre-flight:
 
 ```bash
-curl -X POST localhost:8080/api/admin/tamper/$(curl -s localhost:3000/api/cases/8fa8b03a-c0d7-4f16-b6a4-72345f949974/trail | grep -o '"id":[0-9]*' | head -2 | tail -1 | cut -d: -f2)
+curl -X POST localhost:8080/api/admin/tamper/<TAMPER_EVENT_ID>
 ```
 
 Click **Verify** again. Red, naming the sequence number.
