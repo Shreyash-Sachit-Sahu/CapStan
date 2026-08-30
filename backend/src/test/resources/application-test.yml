@@ -1,0 +1,9 @@
+spring:
+  rabbitmq:
+    listener.simple.auto-startup: false   # tests drive DebitWorker.execute directly
+capstan:
+  llm:
+    gemini.api-key: ""      # copy falls back to templates; no quota spent in tests
+    anthropic.api-key: ""
+logging.level:
+  dev.capstan: INFO
