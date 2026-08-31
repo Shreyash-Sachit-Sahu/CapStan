@@ -219,6 +219,45 @@ class SubmissionDocsTest {
                 .as("the script must build the frontend before starting it")
                 .isLessThan(scriptStart);
     }
+
+    /**
+     * The recording script is the worst place for a stale figure. A wrong number
+     * in a document can be corrected; a wrong number spoken into a submission
+     * video cannot. Its "numbers you must hit" table is therefore checked against
+     * the committed report rather than against itself.
+     *
+     * <p>Only the exact forms are asserted. The spoken forms beside them are
+     * deliberately rounded — "twenty-nine percent" for 28.94% — because a median
+     * of rates is not the aggregate ratio and quoting two decimals over the chart
+     * invites a mismatch.
+     */
+    @Test
+    void theRecordingScriptAgreesWithTheCommittedReport() throws IOException {
+        String script = read(Path.of("..", "docs", "SCRIPT.md"));
+        JsonNode median = new ObjectMapper()
+                .readTree(Files.readString(Path.of("..", "docs", "report_holdout.json"),
+                        StandardCharsets.UTF_8))
+                .path("sweep").path("median");
+
+        record Figure(String rendered, String source) {
+        }
+        for (Figure f : List.of(
+                new Figure(pct2(median.path("baseline")), "sweep median baseline"),
+                new Figure(pct2(median.path("capstan")), "sweep median capstan"),
+                new Figure(pct2(median.path("upperBound")), "sweep median ceiling"))) {
+            assertThat(script)
+                    .as("docs/SCRIPT.md no longer carries '%s' (%s) — this is the document "
+                            + "that gets read aloud into the submission video, where a stale "
+                            + "figure cannot be taken back", f.rendered(), f.source())
+                    .contains(f.rendered());
+        }
+
+        // The pre-flight is what makes the tamper beat work; a script that does
+        // not send you through it is a script that films a 404.
+        assertThat(script)
+                .as("SCRIPT.md must send the presenter through the pre-flight before recording")
+                .contains("demo-preflight.sh");
+    }
     private static String read(Path path) throws IOException {
         assertThat(Files.exists(path))
                 .as("%s not found from %s — the scan would pass vacuously",
