@@ -42,8 +42,10 @@ set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
 
-CASE_LOST=8fa8b03a-c0d7-4f16-b6a4-72345f949974   # 1:35 beat, lost response
-CASE_WRONG=a5225e40-474e-4a54-af3e-d35da24dacfa  # 2:25 beat, model wrong
+# Overridable so the FAIL branches can be exercised against a case that has no
+# execution state. A check nobody has watched fail is not a check.
+CASE_LOST="${CASE_LOST:-8fa8b03a-c0d7-4f16-b6a4-72345f949974}"   # 1:35 beat, lost response
+CASE_WRONG="${CASE_WRONG:-a5225e40-474e-4a54-af3e-d35da24dacfa}"  # 2:25 beat, model wrong
 
 FAILED=0
 step() { printf '\n== %s\n' "$*"; }
