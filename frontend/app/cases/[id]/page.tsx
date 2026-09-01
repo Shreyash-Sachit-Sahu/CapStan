@@ -38,7 +38,7 @@ export default async function CaseView({ params }: { params: Promise<{ id: strin
         <p className="lede">
           {trail.narrative.length} events, chain{' '}
           {trail.verification.valid ? 'intact' : 'BROKEN'}. Held actions are shown
-          struck through — what the system declined to do is the evidence that it
+          struck through. What the system declined to do is the evidence that it
           is bounded.
         </p>
       </section>

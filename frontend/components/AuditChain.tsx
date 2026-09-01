@@ -58,8 +58,8 @@ export default function AuditChain({ caseId, events }: { caseId: string; events:
         <button className="btn" onClick={verify} disabled={state === 'checking'}>
           {state === 'checking' ? 'Verifying…' : 'Verify chain'}
         </button>
-        {state === 'ok' && <span className="verdict haul">Chain intact — {detail}</span>}
-        {state === 'broken' && <span className="verdict halt">Chain broken — {detail}</span>}
+        {state === 'ok' && <span className="verdict haul">Chain intact. {detail}</span>}
+        {state === 'broken' && <span className="verdict halt">Chain broken. {detail}</span>}
       </div>
       <p className="foot">
         audit_event is append-only by database trigger. Editing a row requires

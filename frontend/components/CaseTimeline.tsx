@@ -22,7 +22,7 @@ function describe(type: string, p: Record<string, any>): { what: string; why?: s
     case 'CASE_OPENED': return { what: 'Case opened', why: `${p.rawErrorReason ?? ''}` };
     case 'DIAGNOSIS_ATTEMPTED': return { what: `Diagnosis via ${human(p.method)}`, why: `${p.latencyMs}ms` };
     case 'DIAGNOSIS_RESOLVED':
-      return { what: `Diagnosed ${human(p.cause)}`, why: `confidence ${p.confidence} — ${p.evidence ?? ''}` };
+      return { what: `Diagnosed ${human(p.cause)}`, why: `confidence ${p.confidence}. ${p.evidence ?? ''}` };
     case 'DECISION_MADE': return { what: 'Decision', why: p.humanReadable };
     case 'INTERVENTION_SCHEDULED':
       return { what: `Scheduled ${human(p.kind)}`, why: `attempt ${p.attemptNo} · ${p.rationale ?? ''}` };
@@ -36,7 +36,7 @@ function describe(type: string, p: Record<string, any>): { what: string; why?: s
     case 'GATEWAY_RESPONSE':
       return { what: p.state === 'SUCCEEDED' ? 'Gateway: succeeded' : 'Gateway: declined', why: p.reason ?? p.gatewayRef };
     case 'ATTEMPT_UNKNOWN':
-      return { what: 'Gateway did not confirm the outcome', why: `${p.reason} — recorded UNKNOWN, no further debit until reconciled` };
+      return { what: 'Gateway did not confirm the outcome', why: `${p.reason}. Recorded UNKNOWN, no further debit until reconciled` };
     case 'RECONCILE_ATTEMPTED':
       return { what: 'Asked the gateway what happened', why: `resolved: ${p.resolvedState}` };
     case 'COMMS_SENT': return { what: `Sent ${human(p.kind)}`, why: `${p.locale} · ${p.fromTemplate ? 'template' : 'generated'} copy` };

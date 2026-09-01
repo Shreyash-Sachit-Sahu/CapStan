@@ -9,6 +9,51 @@ type Arm = {
 };
 
 /**
+ * The four facts the demo leans on hardest, at the top and at display size.
+ *
+ * They were ordinary table cells two thirds down the page, carrying the same
+ * weight as "Comms per recovery". Every cell states its own scope, because the
+ * sweep median and this batch are different measurements and a strip that mixed
+ * them silently would be the most misleading object on the page.
+ */
+export function HeadlineMetrics({
+  sweep, baseline, capstan,
+}: {
+  sweep: { median: Record<string, number>; batches: string[] } | null;
+  baseline: Arm; capstan: Arm;
+}) {
+  const delta = sweep ? (sweep.median.capstan - sweep.median.baseline) * 100 : null;
+  const attemptShare = Math.round((capstan.debitAttempts / baseline.debitAttempts) * 100);
+
+  return (
+    <div className="metrics">
+      {delta !== null && (
+        <div>
+          <span className="v haul">+{delta.toFixed(2)}pp</span>
+          <span className="k">more of the value at risk recovered than the fixed ladder</span>
+          <span className="scope">median, {sweep!.batches.length} batches</span>
+        </div>
+      )}
+      <div>
+        <span className="v">{attemptShare}%</span>
+        <span className="k">of the baseline&apos;s debit volume: {capstan.debitAttempts} against {baseline.debitAttempts}</span>
+        <span className="scope">this batch</span>
+      </div>
+      <div>
+        <span className="v haul">{capstan.duplicateChargesCaused}</span>
+        <span className="k">duplicate charges, against the baseline&apos;s {baseline.duplicateChargesCaused}</span>
+        <span className="scope">this batch</span>
+      </div>
+      <div>
+        <span className="v haul">{capstan.safetyFailures}</span>
+        <span className="k">debits on fraud-blocked customers, against {baseline.safetyFailures}</span>
+        <span className="scope">this batch</span>
+      </div>
+    </div>
+  );
+}
+
+/**
  * The equal-budget table leads, ahead of the raw comparison.
  *
  * The headline claim is cost-per-recovery and safety, not recovery rate. Capped
@@ -22,7 +67,7 @@ export function EqualBudget({ budgets }: { budgets: Record<string, { arms: Recor
 
   return (
     <div className="panel">
-      <h2>Per attempt — both arms capped identically</h2>
+      <h2>Per attempt, both arms capped identically</h2>
       <table>
         <thead>
           <tr>
@@ -63,7 +108,7 @@ export function CostRow({ baseline, capstan }: { baseline: Arm; capstan: Arm }) 
   const cells: [string, string, string, boolean][] = [
     ['Debit attempts', baseline.debitAttempts.toLocaleString(), capstan.debitAttempts.toLocaleString(), true],
     ['Wasted attempt rate', pct(baseline.wastedAttemptRate), pct(capstan.wastedAttemptRate), true],
-    ['Comms per recovery', baseline.commsPerRecovery?.toFixed(2) ?? '—', capstan.commsPerRecovery?.toFixed(2) ?? '—', true],
+    ['Comms per recovery', baseline.commsPerRecovery?.toFixed(2) ?? '-', capstan.commsPerRecovery?.toFixed(2) ?? '-', true],
     ['Duplicate charges caused', String(baseline.duplicateChargesCaused), String(capstan.duplicateChargesCaused), false],
     ['Debits on fraud-blocked customers', String(baseline.safetyFailures), String(capstan.safetyFailures), false],
   ];
@@ -86,7 +131,7 @@ export function CostRow({ baseline, capstan }: { baseline: Arm; capstan: Arm }) 
       </table>
       <p className="foot">
         This batch only. Both columns are measured and neither is a
-        counterfactual — &quot;duplicate charges avoided&quot; would be one, so it is
+        counterfactual. &ldquo;Duplicate charges avoided&rdquo; would be one, so it is
         not shown. Across the ten-batch sweep the totals are 33 duplicates and
         270 fraud-blocked debits for the baseline, against 0 and 0.
       </p>
@@ -106,9 +151,17 @@ export function TerminalBar({ capstan }: { capstan: Arm }) {
   return (
     <div className="panel">
       <h2>Where cases ended</h2>
-      <div style={{ display: 'flex', height: 26, border: 'var(--rule)' }}>
+      {/* The segment values used to live only in title=, which is mouse-only:
+          not keyboard reachable, unreliably announced, invisible on touch. The
+          bar states itself the way the ratchet does, and the table below stays
+          the accessible source of the individual numbers. */}
+      <div role="img"
+           aria-label={entries
+             .map((k) => `${human(k)} ${capstan.terminalBreakdown[k]}`)
+             .join(', ')}
+           style={{ display: 'flex', height: 26, border: 'var(--rule)' }}>
         {entries.map((k) => (
-          <div key={k} title={`${k} ${capstan.terminalBreakdown[k]}`}
+          <div key={k} title={`${human(k)} ${capstan.terminalBreakdown[k]}`}
                style={{ width: `${(capstan.terminalBreakdown[k] / total) * 100}%`, background: colour[k] }} />
         ))}
       </div>
@@ -119,7 +172,7 @@ export function TerminalBar({ capstan }: { capstan: Arm }) {
               <td>
                 <span style={{ display: 'inline-block', width: 8, height: 8, background: colour[k], marginRight: 8 }} />
                 {human(k)}
-                {k === 'ESCALATED' && <span className="dim"> — routed to a human, a correct outcome</span>}
+                {k === 'ESCALATED' && <span className="dim"> (routed to a human, a correct outcome)</span>}
               </td>
               <td className="num">{capstan.terminalBreakdown[k]}</td>
             </tr>

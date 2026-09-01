@@ -27,7 +27,7 @@ export default function WhyPanel({ event, decision }: { event?: Event; decision?
 
   return (
     <div className="panel">
-      <h2>Why — attempt {decision.attemptNo}</h2>
+      <h2>Why <span className="dim">attempt {decision.attemptNo}</span></h2>
 
       <p style={{ fontSize: 15, lineHeight: 1.55, margin: '0 0 18px' }}>{d.humanReadable}</p>
 
@@ -38,7 +38,7 @@ export default function WhyPanel({ event, decision }: { event?: Event; decision?
           <tr><td className="dim">Confidence · method</td>
             <td className="num">{d.diagnosis?.confidence} · {human(d.diagnosis?.method)}</td></tr>
           {d.diagnosis?.evidence && (
-            <tr><td className="dim">Evidence</td><td className="num">{d.diagnosis.evidence}</td></tr>)}
+            <tr><td className="dim">Evidence</td><td className="num wrap">{d.diagnosis.evidence}</td></tr>)}
           <tr><td className="dim">Policy · ladder position</td>
             <td className="num">{d.policyName} · {d.ladderPosition}</td></tr>
           <tr><td className="dim">Proposed → final</td>
@@ -49,7 +49,7 @@ export default function WhyPanel({ event, decision }: { event?: Event; decision?
             <tr><td className="dim">Scheduled for</td><td className="num">{ist(d.scheduledFor)}</td></tr>)}
           {d.terminalStatus && (
             <tr><td className="dim">Terminal</td>
-              <td className="num">{human(d.terminalStatus)} — {d.terminalReason}</td></tr>)}
+              <td className="num wrap">{human(d.terminalStatus)}: {d.terminalReason}</td></tr>)}
         </tbody>
       </table>
 
@@ -73,7 +73,7 @@ export default function WhyPanel({ event, decision }: { event?: Event; decision?
       </table>
 
       {d.stopConditions?.length > 0 && (
-        <p className="foot">Stop conditions — {d.stopConditions.join(' · ')}</p>
+        <p className="foot">Stop conditions: {d.stopConditions.join(', ')}</p>
       )}
     </div>
   );

@@ -25,8 +25,9 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
       <svg width="0" height="0" aria-hidden>
         <defs>
           <pattern id="lowres" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="5" height="5" fill="#1B222B" />
-            <line x1="0" y1="0" x2="0" y2="5" stroke="#4FD1A5" strokeWidth="1.6" opacity="0.55" />
+            <rect width="5" height="5" style={{ fill: 'var(--slab)' }} />
+            <line x1="0" y1="0" x2="0" y2="5" strokeWidth="1.6" opacity="0.55"
+                  style={{ stroke: 'var(--haul)' }} />
           </pattern>
         </defs>
       </svg>
@@ -42,12 +43,15 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
           <BarChart data={rows} layout="vertical" margin={{ left: 0, right: 68, top: 4, bottom: 4 }}>
             <XAxis type="number" hide domain={[Math.min(0, ...rows.map((r) => r.pp)) * 1.6, 'dataMax']} />
             <YAxis type="category" dataKey="name" width={188} axisLine={false} tickLine={false}
-                   tick={{ fill: '#8794A3', fontSize: 12 }} />
+                   tick={{ style: { fill: 'var(--muted)', fontSize: 12 } }} />
             <Bar dataKey="pp" barSize={15} isAnimationActive={false}>
               {rows.map((r) => (
                 <Cell key={r.name}
-                      fill={r.pp < 0 ? '#E8A33D'
-                        : Math.abs(r.pp) < RESOLUTION_FLOOR_PP ? 'url(#lowres)' : '#4FD1A5'} />
+                      fill={Math.abs(r.pp) < RESOLUTION_FLOOR_PP && r.pp !== 0
+                        ? 'url(#lowres)' : undefined}
+                      style={Math.abs(r.pp) < RESOLUTION_FLOOR_PP && r.pp !== 0
+                        ? undefined
+                        : { fill: r.pp < 0 ? 'var(--slip)' : 'var(--haul)' }} />
               ))}
               {/* Labels are placed by sign. A negative bar grows leftward, so
                   Recharts' "right" position puts its label back at the zero line —
@@ -55,10 +59,10 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
                   other's sign, is the fix that keeps both ends outside the bar. */}
               <LabelList dataKey="pp" position="right"
                          formatter={(v: number) => (v >= 0 ? `+${v.toFixed(2)}pp` : '')}
-                         style={{ fill: '#DCE3EA', fontSize: 12, fontVariantNumeric: 'tabular-nums' }} />
+                         style={{ fill: 'var(--text)', fontSize: 12, fontVariantNumeric: 'tabular-nums' }} />
               <LabelList dataKey="pp" position="left"
                          formatter={(v: number) => (v < 0 ? `${v.toFixed(2)}pp` : '')}
-                         style={{ fill: '#E8A33D', fontSize: 12, fontVariantNumeric: 'tabular-nums' }} />
+                         style={{ fill: 'var(--slip)', fontSize: 12, fontVariantNumeric: 'tabular-nums' }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -68,7 +72,7 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
         <p className="foot">
           Hatched bars are below 1pp. One case at the median ticket is 0.34pp of a
           300-case batch, so those are one-to-two-case effects at the resolution
-          limit — the ten-seed sweep is the better read for anything that small.
+          limit. The ten-seed sweep is the better read for anything that small.
         </p>
       )}
     </>

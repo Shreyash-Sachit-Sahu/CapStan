@@ -70,7 +70,7 @@ export default async function Exceptions() {
         return (
           <section key={key}>
             <div className="panel">
-              <h2>{title} — {body.counts[key]}</h2>
+              <h2>{title} <span className="dim">{body.counts[key]}</span></h2>
               <p className="foot" style={{ marginTop: -6, marginBottom: sharedStep ? 4 : 14 }}>{blurb}</p>
               {sharedStep && (
                 <p className="foot" style={{ marginTop: 0, marginBottom: 14 }}>
@@ -101,8 +101,8 @@ export default async function Exceptions() {
                         </td>
                       )}
                       <td className="dim">
-                        {human(e.terminalStatus)} · rung {e.ladderPosition}
-                        {e.stoppedByGuardrail && <> · <span className="halt">{e.stoppedByGuardrail}</span></>}
+                        {human(e.terminalStatus)}, rung {e.ladderPosition}
+                        {e.stoppedByGuardrail && <> <span className="tag held">{e.stoppedByGuardrail}</span></>}
                       </td>
                       <td className="num slip">{rupees(e.amountPaise)}</td>
                     </tr>

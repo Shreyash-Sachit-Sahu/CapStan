@@ -1,6 +1,6 @@
 import RatchetScale from '@/components/RatchetScale';
 import AblationWaterfall from '@/components/AblationWaterfall';
-import { CostRow, EqualBudget, GuardrailTable, TerminalBar } from '@/components/BatchPanels';
+import { CostRow, EqualBudget, GuardrailTable, HeadlineMetrics, TerminalBar } from '@/components/BatchPanels';
 import { DEMO, get, ist, rupees } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ export default async function BatchView() {
       <section>
         <h1>No measurement on file</h1>
         <p className="lede">
-          The cockpit reads the last completed run rather than starting one — a run
+          The cockpit reads the last completed run rather than starting one. A run
           takes about eighty seconds and a judge looks for ninety.
         </p>
         <div className="empty" style={{ marginTop: 20 }}>
@@ -52,12 +52,17 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
           gateway. Absolute rupee figures are synthetic; the comparison and the
           ceiling beside it are the claim.
         </p>
+        {arms?.baseline && arms?.capstan && (
+          <div style={{ marginTop: 'var(--s-4)' }}>
+            <HeadlineMetrics sweep={sweep} baseline={arms.baseline} capstan={arms.capstan} />
+          </div>
+        )}
       </section>
 
       {sweep && (
         <section>
           <RatchetScale
-            label={`Share of value at risk recovered — median of ${sweep.batches.length} batches`}
+            label={`Share of value at risk recovered, median of ${sweep.batches.length} batches`}
             baseline={sweep.median.baseline}
             capstan={sweep.median.capstan}
             ceiling={sweep.median.upperBound}
@@ -87,7 +92,7 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
           <p className="foot">
             Ten distinct fixtures, 3,000 cases, median. Every figure below this
             line is a single batch (<code className="hash">{run?.batch}</code>) and
-            is labelled as such — the two are different measurements.
+            is labelled as such. The two are different measurements.
           </p>
         </section>
       )}
@@ -99,7 +104,7 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
       {report.ablations && (
         <section>
           <div className="panel">
-            <h2>What each mechanism earned — single batch</h2>
+            <h2>What each mechanism earned, single batch</h2>
             <AblationWaterfall data={report.ablations.attributionPp} />
           </div>
         </section>
@@ -136,9 +141,9 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
           </table>
         </div>
         <p className="foot">
-          {run && <>Batch <code className="hash">{run.batch}</code> · {run.cases} cases ·{' '}
-            {rupees(run.atRiskPaise)} at risk · faults <code className="hash">{run.inject}</code> · </>}
-          measured {ist(report.generatedAt)}
+          {run && <>Batch <code className="hash">{run.batch}</code>, {run.cases} cases,{' '}
+            {rupees(run.atRiskPaise)} at risk. Faults <code className="hash">{run.inject}</code>. </>}
+          Measured {ist(report.generatedAt)}
         </p>
       </section>
     </>
