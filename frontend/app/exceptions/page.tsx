@@ -80,16 +80,19 @@ export default async function Exceptions() {
               <table>
                 <thead>
                   <tr>
-                    <th>Case</th><th>Diagnosed</th>
-                    {key !== 'correctlyAbandoned' && <th>True cause</th>}
-                    <th>Stopped at</th><th className="num">Amount</th>
+                    <th scope="col">Case</th><th scope="col">Diagnosed</th>
+                    {key !== 'correctlyAbandoned' && <th scope="col">True cause</th>}
+                    <th scope="col">Stopped at</th><th scope="col" className="num">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((e) => (
                     <tr key={e.caseId}>
                       <td>
-                        <a href={`/cases/${e.caseId}`} className="hash">{e.caseId.slice(0, 8)}</a>
+                        <a href={`/cases/${e.caseId}`} className="hash"
+                           aria-label={`Open case ${e.caseId.slice(0, 8)}, ${human(e.diagnosedCause)}, ${rupees(e.amountPaise)}`}>
+                          {e.caseId.slice(0, 8)}
+                        </a>
                         {!sharedStep && (
                           <div className="foot" style={{ margin: 0 }}>{e.nextStepForAHuman}</div>
                         )}

@@ -34,7 +34,14 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
       {/* The 188px category gutter would eat a phone viewport, so the plot keeps a
           floor width and scrolls. The scroll container is here rather than on the
           enclosing .panel so containment does not depend on the parent's styling. */}
-      <div style={{ overflowX: 'auto' }}>
+      {/* RatchetScale and TerminalBar both carry role="img" + aria-label; this
+          chart carried neither, so the mechanism attribution -- the claim the
+          whole result rests on -- announced nothing at all. */}
+      <div style={{ overflowX: 'auto' }}
+           role="img"
+           aria-label={`Points of rupee recovery attributable to each mechanism: ${
+             rows.map((r) => `${r.name} ${r.pp >= 0 ? 'plus' : 'minus'} ${Math.abs(r.pp).toFixed(2)}`)
+                 .join(', ')}.`}>
       <div style={{ width: '100%', minWidth: 520, height: rows.length * 34 + 26 }}>
         <ResponsiveContainer>
           {/* The right margin has to clear the widest label — "+15.50pp" is ~52px at

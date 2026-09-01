@@ -53,10 +53,12 @@ export default function WhyPanel({ event, decision }: { event?: Event; decision?
         </tbody>
       </table>
 
-      <h2>Guardrails</h2>
+      {/* Nested under "Why", so it is h3. It was an h2, which made a panel
+          title and its own subsection rank identically. */}
+      <h3 style={{ marginBottom: 'var(--s-2)' }}>Guardrails</h3>
       <table>
         <thead>
-          <tr><th style={{ width: 40 }}>ID</th><th>Bound</th><th className="num">Result</th></tr>
+          <tr><th scope="col" style={{ width: 40 }}>ID</th><th scope="col">Bound</th><th scope="col" className="num">Result</th></tr>
         </thead>
         <tbody>
           {(d.guardrails ?? []).map((g: any) => (

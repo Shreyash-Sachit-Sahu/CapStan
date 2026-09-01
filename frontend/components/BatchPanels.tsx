@@ -71,11 +71,11 @@ export function EqualBudget({ budgets }: { budgets: Record<string, { arms: Recor
       <table>
         <thead>
           <tr>
-            <th>Budget</th>
-            <th className="num">Baseline</th>
-            <th className="num">Capstan</th>
-            <th className="num">Delta</th>
-            <th className="num">Attempts b / c</th>
+            <th scope="col">Budget</th>
+            <th scope="col" className="num">Baseline</th>
+            <th scope="col" className="num">Capstan</th>
+            <th scope="col" className="num">Delta</th>
+            <th scope="col" className="num">Attempts b / c</th>
           </tr>
         </thead>
         <tbody>
@@ -117,7 +117,7 @@ export function CostRow({ baseline, capstan }: { baseline: Arm; capstan: Arm }) 
       <h2>What it cost</h2>
       <table>
         <thead>
-          <tr><th>Measure</th><th className="num">Baseline</th><th className="num">Capstan</th></tr>
+          <tr><th scope="col">Measure</th><th scope="col" className="num">Baseline</th><th scope="col" className="num">Capstan</th></tr>
         </thead>
         <tbody>
           {cells.map(([label, b, c, neutral]) => (
@@ -209,7 +209,7 @@ export function GuardrailTable({ blocks }: { blocks: Record<string, number> }) {
       <h2>Guardrails that stopped something</h2>
       <table>
         <thead>
-          <tr><th style={{ width: 46 }}>ID</th><th>Guardrail</th><th className="num">Fired</th></tr>
+          <tr><th scope="col" style={{ width: 46 }}>ID</th><th scope="col">Guardrail</th><th scope="col" className="num">Fired</th></tr>
         </thead>
         <tbody>
           {ids.map((id) => (

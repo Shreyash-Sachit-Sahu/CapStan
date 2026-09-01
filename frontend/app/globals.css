@@ -16,6 +16,11 @@
   --text:  #DCE3EA;
   --muted: #8794A3;
   --faint: #808C9A;
+  /* --faint was carrying six roles at once: column headers, footnotes, case-id
+     links, scope labels, sequence numbers and guardrail ids. A link is the one
+     of those the reader has to act on, so it stops sharing the quietest value
+     on the page. 7.33:1 against the ground. */
+  --link:  #9AA6B4;
 
   --gut: 24px;
   --rule: 1px solid var(--line);
@@ -24,9 +29,11 @@
      channels. Changing --halt earlier in this project left two hand-copied
      rgba(194, 91, 91, ...) values behind, still the old red; color-mix means a
      token change reaches every wash that depends on it. */
-  --rule-hair:  color-mix(in srgb, var(--line) 26%, transparent);
+  --rule-hair:  color-mix(in srgb, var(--line) 70%, transparent);
   --rule-soft:  color-mix(in srgb, var(--line) 50%, transparent);
-  --wash-row:   color-mix(in srgb, var(--line) 28%, transparent);
+  /* 28% of --line computed to 1.09:1 against the ground, which is not a hover
+     state, it is the absence of one. Mixing --muted instead lands at 1.40. */
+  --wash-row:   color-mix(in srgb, var(--muted) 22%, transparent);
   --wash-base:  color-mix(in srgb, var(--muted) 16%, transparent);
   --wash-haul:  color-mix(in srgb, var(--haul) 14%, transparent);
   --wash-sel:   color-mix(in srgb, var(--haul) 7%, transparent);
@@ -274,11 +281,43 @@ td.num, th.num { padding-right: 0; }
 }
 .tag.held { border-color: var(--edge-halt); color: var(--halt); }
 
-:focus-visible { outline: 2px solid var(--haul); outline-offset: -2px; }
+/* The selection marker on a timeline row is also an inset 2px edge, so a
+   focused selected row had the ring and the marker fighting for the same
+   pixels. The ring sits outside now and the two stay distinguishable. */
+:focus-visible { outline: 2px solid var(--haul); outline-offset: 2px; }
+.tl button:focus-visible { outline-offset: -3px; }
+
+/* Nothing in this product acknowledged being pressed. For a surface whose
+   argument is that every action is deliberate, that silence was wrong. */
+.tl button, .btn, .masthead nav a, a.hash {
+  transition: background-color 90ms ease-out, border-color 90ms ease-out,
+              color 90ms ease-out;
+}
+.tl button:active { background: var(--wash-sel); }
+.btn:active { border-color: var(--haul); color: var(--haul); }
+@media (prefers-reduced-motion: reduce) {
+  .tl button, .btn, .masthead nav a, a.hash { transition: none; }
+}
+
+/* The verify button carries `disabled` while a check is in flight and looked
+   identical to its enabled state, cursor included. */
+.btn:disabled { color: var(--faint); border-color: var(--rule-soft); cursor: progress; }
+.btn:disabled:hover { border-color: var(--rule-soft); }
 
 /* Chain ------------------------------------------------------------------- */
 
 .hash { font-family: var(--font-mono); font-size: var(--t-micro); color: var(--faint); }
+/* .hash styles both an inert <code> and a real link. Only one of them is
+   actionable, so only one of them takes the brighter value and the underline. */
+a.hash {
+  color: var(--link);
+  /* Tied to the link's own colour, not to a surface token. An earlier pass set
+     this to --rule-soft, which computes to 1.19:1 and left the link leaning on
+     colour alone. */
+  text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
+  text-underline-offset: 2px;
+}
+a.hash:hover, a.hash:focus-visible { color: var(--haul); text-decoration-color: currentColor; }
 .btn {
   font: inherit; font-size: var(--t-small); background: none; color: var(--text);
   border: var(--rule); padding: 7px 14px; cursor: pointer;
@@ -301,7 +340,14 @@ td.num, th.num { padding-right: 0; }
   display: grid; grid-template-columns: repeat(4, 1fr);
   border-top: var(--rule); border-bottom: var(--rule);
 }
-.metrics > div { padding: var(--s-3) var(--s-3) var(--s-3) 0; }
+/* The cells' descriptions wrap to different line counts, so the scope labels
+   sat on three different baselines across four cells. Column + auto margin
+   pins them to the bottom instead. */
+.metrics > div {
+  padding: var(--s-3) var(--s-3) var(--s-3) 0;
+  display: flex; flex-direction: column;
+}
+.metrics .scope { margin-top: auto; }
 .metrics > div + div { border-left: var(--rule); padding-left: var(--s-3); }
 .metrics .v {
   display: block; font-family: var(--font-mono); font-size: 26px;
@@ -313,7 +359,7 @@ td.num, th.num { padding-right: 0; }
 }
 .metrics .scope {
   display: block; color: var(--faint); font-size: var(--t-micro);
-  letter-spacing: 0.08em; text-transform: uppercase; margin-top: 6px;
+  letter-spacing: 0.08em; text-transform: uppercase; padding-top: var(--s-1);
 }
 @media (max-width: 820px) { .metrics { grid-template-columns: repeat(2, 1fr); }
   .metrics > div:nth-child(3) { border-left: 0; padding-left: 0; }

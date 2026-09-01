@@ -37,8 +37,8 @@ export default function AuditChain({ caseId, events }: { caseId: string; events:
       <table>
         <thead>
           <tr>
-            <th style={{ width: 40 }}>Seq</th><th>Event</th><th>Actor</th>
-            <th className="num">prev</th><th className="num">hash</th>
+            <th scope="col" style={{ width: 40 }}>Seq</th><th scope="col">Event</th><th scope="col">Actor</th>
+            <th scope="col" className="num">prev</th><th scope="col" className="num">hash</th>
           </tr>
         </thead>
         <tbody>

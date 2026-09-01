@@ -73,7 +73,7 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=${BATCH}&inject=timeout_rate
           <table>
             <thead>
               <tr>
-                <th>Arm</th><th className="num">Median</th><th className="num">IQR</th>
+                <th scope="col">Arm</th><th scope="col" className="num">Median</th><th scope="col" className="num">IQR</th>
               </tr>
             </thead>
             <tbody>
