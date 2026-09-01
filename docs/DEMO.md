@@ -10,12 +10,14 @@ tables; `docs/report_diagnosis_holdout.json` and
 `docs/report_exceptions_holdout.json` carry the rest. If a figure here disagrees
 with the screen, the screen wins and this file is stale.
 
-One figure is deliberately not written down: the Missed count on tab 4. Until
-`c3d5ec2` the reconciliation queue had no total order, so identical runs
-returned results spread over about thirteen cases. It is reproducible now, but
-the reproducible value (189 not recovered) differs from the committed report
-(177), and the reports were deliberately not regenerated. Read that one off the
-screen. README's audit section has the whole story.
+The reports were regenerated on 2 September after `c3d5ec2` gave the
+reconciliation queue a total order. Every figure in this file is post-fix, and
+the headline moved: Capstan's sweep median is **38.39%**, the delta **+9.12pp**,
+and we are ahead on **9 of 10** batches, not 10. README's audit section carries
+the pre-registration and what the correction cost.
+
+The Missed count on tab 4 is still read off the screen rather than written down,
+because it is the one figure a re-run moves.
 
 ---
 
@@ -145,12 +147,12 @@ that is rule 1 — stop the frontend, `npm run build`, then `npm run start`.
 > batches. **₹36.5 lakh** at risk.
 >
 > A standard fixed retry ladder — T+1, T+3, T+5 — recovers **₹10.9 lakh** of
-> that. Capstan recovers **₹15.2 lakh**. Four point three lakh more, from the
+> that. Capstan recovers **₹14.0 lakh**. Three point two lakh more, from the
 > same failures.
 >
 > As a share of value at risk, median across the ten: **29%** for the ladder,
-> **42%** for us. With perfect foresight the ceiling is **79%**. We're ahead on
-> all ten batches."
+> **38%** for us. With perfect foresight the ceiling is **79%**. We're ahead on
+> nine of the ten."
 
 Everything spoken here is the sweep, and the ratchet on screen is the sweep.
 **Do not quote a single-batch rupee figure over this chart** — ₹3.5 lakh is one
@@ -172,7 +174,7 @@ aggregate ratio.
 > 27 against 37.
 >
 > We win at every budget where the cap actually binds. Across the sweep we use
-> **49% of the baseline's attempt volume**. This is a cost-per-recovery argument,
+> **52% of the baseline's attempt volume**. This is a cost-per-recovery argument,
 > not a recovery-rate one."
 
 ---
@@ -182,7 +184,7 @@ aggregate ratio.
 **Tab 1, scroll to the ablation bars.**
 
 > "We disabled each mechanism in turn to see what it was worth. One dominates:
-> not retrying before payday, at **+15.5 points**.
+> not retrying before payday, at **+11.9 points**.
 >
 > That is more than our entire lead. **Turn payday timing off and we recover
 > 23%, against the baseline's 30% — we lose.** The naive ladder retries at T+1
@@ -328,10 +330,10 @@ class has no way to call one.
 
 **"Why does your agent recover less per case than a naive ladder at full budget?"**
 It doesn't any more, but it did, and the answer is the interesting part. At
-unconstrained budget the baseline spends 785 debits to our 399. On a simulator
+unconstrained budget the baseline spends 785 debits to our 428. On a simulator
 where each attempt draws success independently, spending more attempts buys more
 recovery, and `recoveryRatePaise` prices an attempt at zero. Cap both arms
-equally and we win at every budget — +13.31pp at one attempt each.
+equally and we win at every budget — +10.23pp at one attempt each.
 
 We could have made the recovery-rate number look better by adding a cost model —
 a per-attempt gateway fee, churn on unwanted debits, the refund-and-support cost

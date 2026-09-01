@@ -94,8 +94,8 @@
 
   <p class="claim">
     A failed mandate debit is diagnosed, matched to a bounded recovery ladder, and
-    executed exactly once. At <b>49% of a naive retry ladder&rsquo;s attempt volume</b> it
-    recovers more money on <b>10 of 10 batches</b>, with <b>zero</b> duplicate charges
+    executed exactly once. At <b>52% of a naive retry ladder&rsquo;s attempt volume</b> it
+    recovers more money on <b>9 of 10 batches</b>, with <b>zero</b> duplicate charges
     against the baseline&rsquo;s 33 and <b>zero</b> debits against fraud-blocked customers
     against the baseline&rsquo;s 270.
   </p>
@@ -111,7 +111,7 @@
       <text x="0" y="19" font-size="14" fill="#5C6875" letter-spacing="1">FIXED LADDER &#8212; T+1, T+3, T+5</text>
 
       <rect x="0" y="80" width="417.6" height="34" fill="#4FD1A5"/>
-      <text x="427" y="103" font-size="19" fill="#12161C">capstan <tspan font-weight="650">41.8%</tspan></text>
+      <text x="427" y="103" font-size="19" fill="#12161C">capstan <tspan font-weight="650">38.4%</tspan></text>
       <text x="0" y="73" font-size="14" fill="#1F7A5C" letter-spacing="1" font-weight="650">CAPSTAN</text>
 
       <line x1="790" y1="20" x2="790" y2="120" stroke="#E8A33D" stroke-width="3"/>
@@ -124,16 +124,16 @@
     </svg>
     <figcaption>
       Median share of value at risk recovered across ten independently seeded batches
-      (IQR 6.60pp baseline, 3.63pp Capstan). Median delta <b>+12.51pp</b>, range +3.34 to
-      +18.63, ahead on all ten. The ceiling is what perfect foresight recovers on the same
+      (IQR 6.60pp baseline, 3.54pp Capstan). Median delta <b>+9.12pp</b>, range +3.34 to
+      +18.63, ahead on nine of the ten. The ceiling is what perfect foresight recovers on the same
       fixtures &mdash; published, because a result without one implies a target that does
       not exist.
     </figcaption>
   </figure>
 
   <div class="strip">
-    <div><span class="v num">&#8377;4.33L</span><span class="k">more recovered than the baseline, of &#8377;36.47L at risk</span></div>
-    <div><span class="v num">49%</span><span class="k">of the baseline&rsquo;s debit volume &mdash; 3,863 vs 7,858</span></div>
+    <div><span class="v num">&#8377;3.17L</span><span class="k">more recovered than the baseline, of &#8377;36.47L at risk</span></div>
+    <div><span class="v num">52%</span><span class="k">of the baseline&rsquo;s debit volume &mdash; 4,073 vs 7,858</span></div>
     <div><span class="v num good">0</span><span class="k">duplicate charges &mdash; baseline 33</span></div>
     <div><span class="v num good">0</span><span class="k">debits on fraud-blocked customers &mdash; baseline 270</span></div>
   </div>
@@ -148,9 +148,9 @@
       <table>
         <thead><tr><th>Budget</th><th class="n">Baseline</th><th class="n">Capstan</th><th class="n">Delta</th></tr></thead>
         <tbody>
-          <tr><td>1 debit / case</td><td class="n">11.35%</td><td class="n"><b>24.66%</b></td><td class="n"><b>+13.31pp</b></td></tr>
-          <tr><td>2 debits / case</td><td class="n">27.08%</td><td class="n"><b>36.52%</b></td><td class="n"><b>+9.44pp</b></td></tr>
-          <tr><td>3 debits / case</td><td class="n">30.26%</td><td class="n"><b>38.68%</b></td><td class="n"><b>+8.42pp</b></td></tr>
+          <tr><td>1 debit / case</td><td class="n">11.35%</td><td class="n"><b>21.58%</b></td><td class="n"><b>+10.23pp</b></td></tr>
+          <tr><td>2 debits / case</td><td class="n">27.08%</td><td class="n"><b>31.75%</b></td><td class="n"><b>+4.67pp</b></td></tr>
+          <tr><td>3 debits / case</td><td class="n">30.26%</td><td class="n"><b>35.29%</b></td><td class="n"><b>+5.03pp</b></td></tr>
         </tbody>
       </table>
       <p class="dim" style="margin-top:4pt">
@@ -160,7 +160,7 @@
 
       <div class="callout">
         <b>Payday timing is worth more than our entire lead.</b> Ablate it and Capstan
-        recovers 23.18% against the baseline&rsquo;s 30.26% &mdash; <b>we lose.</b> That is the
+        recovers 23.42% against the baseline&rsquo;s 30.26% &mdash; <b>we lose.</b> That is the
         load-bearing decision and it is checkable: run the ablation. It is also the first
         thing we would replace, because payday is inferred from prior successful debits
         and defaults to the 1st of the month on a cold batch.
@@ -183,7 +183,7 @@
           </tr>
           <tr>
             <td>Declined to model what a completed re-authorisation refreshes</td>
-            <td><b>4.36pp</b> of our own expectation, forgone and stated as a limitation</td>
+            <td><b>7.99pp</b> of our own expectation, forgone and stated as a limitation</td>
           </tr>
           <tr>
             <td>Left the simulator&rsquo;s independent-attempt bias in place</td>
@@ -208,7 +208,7 @@
     <p>
       <b>How to check it.</b> Same oracle for both arms, package-isolated from the agent by
       a test that fails the build if the agent so much as names it. Ceiling published; all
-      177 non-recoveries published with causes. Raw output in
+      189 non-recoveries published with causes. Raw output in
       <code>docs/report_holdout.json</code>.
     </p>
     <p>

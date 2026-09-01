@@ -22,12 +22,13 @@ arithmetic will get a number that does not reconcile.
 | | say | screen shows |
 |---|---|---|
 | Baseline, share of value at risk | "twenty-nine percent" | 28.94% |
-| Capstan | "forty-two percent" | 41.76% |
+| Capstan | "thirty-eight percent" | 38.39% |
 | Oracle ceiling | "seventy-nine percent" | 79.00% |
 | At risk, sweep | "thirty-six and a half lakh" | ₹36.47L |
 | Missed, this batch | read it off tab 4 | changes when the batch is re-run |
 | Baseline recovered | "ten point nine lakh" | ₹10.87L |
-| Capstan recovered | "fifteen point two lakh" | ₹15.20L |
+| Capstan recovered | "fourteen lakh" | ₹14.04L |
+| Capstan recovered | "fifteen point two lakh" | ₹14.04L |
 
 Everything else is spoken as written.
 
@@ -46,9 +47,10 @@ Everything else is spoken as written.
 > Capstan recovers **fifteen point two**.
 >
 > As a share of value at risk: **twenty-nine percent** for the ladder,
-> **forty-two** for us. With perfect foresight, the ceiling is **seventy-nine**.
+> **thirty-eight** for us. With perfect foresight, the ceiling is
+> **seventy-nine**.
 >
-> We are ahead on all ten batches.
+> We are ahead on nine of the ten batches.
 
 ---
 

@@ -52,3 +52,42 @@ informative rather than just wrong.
 - No figure in this table is edited after the run. Misses are reported as misses,
   the way the four pre-registered magnitudes in `2026-08-30-reauth-debit-rung.md`
   were.
+
+---
+
+## Outcome
+
+Measured 2 September, after this file was committed at `a45227b`.
+
+| # | Predicted | Measured | |
+|---|---|---|---|
+| 1 | Baseline sweep median unchanged | 28.94% | held |
+| 2 | Oracle ceiling unchanged | 79.00% | held |
+| 3 | Capstan sweep median 36.8-39.8% | **38.39%** | in band |
+| 4 | Median delta +7.5 to +10.5pp | **+9.12pp** | in band |
+| 5 | 9 or 10 batches won | **9 of 10** | resolved against us |
+| 6 | Capstan duplicate charges 0 | 0 | held |
+| 7 | Baseline duplicate charges 33 | 33 | held |
+| 8 | Fraud-blocked 270 / 0 | 270 / 0 | held |
+
+All five invariants held, so the fix reached only Capstan's reconciliation path
+and nothing else. Both magnitude bands contained the answer, which is the first
+time a pre-registered estimate in this project has been calibrated rather than
+optimistic; the four in `2026-08-30-reauth-debit-rung.md` all came in low.
+
+Prediction 5 resolved to nine. The weakest batch moved from +3.34pp to -1.29pp.
+As committed above, the headline and the 0:00 beat of both scripts now say nine.
+
+### Not predicted
+
+Two things moved that this file did not anticipate, recorded as observations
+rather than dressed up as expectations:
+
+- **Capstan's debit attempts rose from 3,863 to 4,073**, so attempt volume
+  against the baseline went from 49% to 52%. The plausible mechanism is that
+  stable ordering resolves attempts sooner and a resolved failure unblocks the
+  next debit. Unverified.
+- **G7 quiet hours moved from +0.00pp to +2.46pp**, and the over-cap
+  substitution penalty from -4.36pp to -7.99pp. The README previously said G7
+  was zero, twice. It is not: quiet hours costs about two and a half points of
+  recovery, which is a cost we choose rather than one we had measured.

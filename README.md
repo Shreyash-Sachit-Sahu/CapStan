@@ -4,8 +4,7 @@ Capstan diagnoses failed recurring payments, picks a bounded recovery action, an
 executes it exactly once — with the stopping rules, guardrails and audit trail
 written into the system rather than the pitch.
 
-**At 49% of a naive retry ladder's attempt volume, it recovers more money on 10
-of 10 batches, with zero duplicate charges against the baseline's 33 and zero
+**At 52% of a naive retry ladder's attempt volume, it recovers more money on 9 of 10 batches, with zero duplicate charges against the baseline's 33 and zero
 debits against fraud-blocked customers against the baseline's 270.**
 
 ---
@@ -18,10 +17,10 @@ the same simulated gateway. Median over the sweep:
 | | median | IQR | duplicate charges | debits on fraud-blocked customers | debit attempts |
 |---|---:|---:|---:|---:|---:|
 | Fixed-ladder baseline | 28.94% | 6.60pp | 33 | 270 | 7,858 |
-| **Capstan** | **41.76%** | **3.63pp** | **0** | **0** | 3,863 |
+| **Capstan** | **38.39%** | **3.54pp** | **0** | **0** | 4,073 |
 | Oracle upper bound | 79.00% | 4.88pp | — | — | — |
 
-Median delta **+12.51pp**, range +3.34 to +18.63, ahead on **10 of 10 seeds**.
+Median delta **+9.12pp**, range -1.29 to +15.43, ahead on **9 of 10 seeds**.
 
 Raw output: [`docs/report_holdout.json`](docs/report_holdout.json),
 [`docs/report_diagnosis_holdout.json`](docs/report_diagnosis_holdout.json),
@@ -37,9 +36,9 @@ Cap both arms at the same debits per case:
 
 | budget | baseline | Capstan | delta |
 |---:|---:|---:|---:|
-| 1 debit per case | 11.35% | **24.66%** | **+13.31pp** |
-| 2 debits per case | 27.08% | **36.52%** | **+9.44pp** |
-| 3 debits per case | 30.26% | **38.68%** | **+8.42pp** |
+| 1 debit per case | 11.35% | **21.58%** | **+10.23pp** |
+| 2 debits per case | 27.08% | **31.75%** | **+4.67pp** |
+| 3 debits per case | 30.26% | **35.29%** | **+5.03pp** |
 
 Capstan wins wherever the cap actually binds. The claim is cost-per-recovery and
 safety, not recovery rate.
@@ -48,26 +47,34 @@ safety, not recovery rate.
 
 | mechanism | pp of rupee recovery |
 |---|---:|
-| payday-window timing | **+15.50** |
+| payday-window timing | **+11.87** |
 | re-auth routing | **+4.94** |
 | rail switch | +0.71 |
-| reconcile-before-retry | +0.00 *(but 0 → 3 duplicate charges)* |
-| G7 quiet hours | +0.00 |
+| reconcile-before-retry | +0.00 *(but 0 → 5 duplicate charges)* |
+| G7 quiet hours | +2.46 |
 | low-confidence conservatism | +0.00 |
-| over-cap substitution | −4.36 |
+| over-cap substitution | -7.99 |
 
 **Payday timing is worth more than our entire lead. Remove it and Capstan
-recovers 23.18% against the baseline's 30.26% — we lose.** That is the
+recovers 23.42% against the baseline's 30.26% — we lose.** That is the
 load-bearing decision, and it is checkable: run the ablation.
 
-Reconciliation moving recovery by nothing while preventing three duplicate
+Reconciliation moving recovery by nothing while preventing **five** duplicate
 charges is the ablation earning its keep — it is a safety mechanism, not a
 recovery one, and this is what proves it rather than asserting it.
 
-The bottom three sit at or below the resolution limit of a 300-case batch, where
-one median-ticket case is 0.34pp. **We have been wrong about them once already**
-— a contaminated run reported G7 and low-confidence conservatism at +0.71pp when
-both are zero. They are rendered hatched in the cockpit and we do not claim them.
+The bottom two sit at or below the resolution limit of a 300-case batch, where
+one median-ticket case is 0.34pp. They are rendered hatched in the cockpit and we
+do not claim them.
+
+**G7 quiet hours is the cautionary one, and it is worth saying plainly.** It has
+now measured three different values under three states of the harness: 0.00pp
+originally, +0.71pp on a contaminated run we caught and disclosed, and **+2.46pp**
+after the reconciliation ordering fix. We twice wrote that it was zero. It is
+not. Quiet hours costs real recovery — Capstan gives up about two and a half
+points by refusing to message people at 03:00, which the baseline is happy to do.
+That is a cost we choose, and for two revisions of this document we understated it
+because the harness underneath it was wrong.
 
 ---
 
@@ -123,7 +130,7 @@ can produce a wrong answer belongs almost entirely to one arm:
 | Issuer breaker counting attempts across batches | `recentAttemptsSameReason()`, read only by G11 | ~28pp | it has no guardrails |
 | Re-auth columns surviving the run reset | `reauth_completed_at`, read only by G12 | ~0.7pp | it has no re-authorisation concept |
 
-### The fourth one went the other way (−12 recovered cases, ours)
+### The fourth one went the other way (−3.39pp of headline, ours)
 
 Everything above was written when three errors had been found and all three had
 run in our favour. A fourth turned up afterwards, and it is the one that pays
@@ -143,28 +150,52 @@ them, so **three identical runs returned three different results**:
 | C | 131 | 58 | 111 |
 
 Ordering by `(initiated_at, id)` makes it reproducible. Four consecutive runs
-now agree. What that costs us is the point:
+now agree. Everything after that point was done in the open: we wrote down what
+we expected the fix to cost, committed it, and only then re-measured.
 
-| | published here | deterministic |
+[`docs/decisions/2026-09-02-reconcile-ordering-remeasure.md`](docs/decisions/2026-09-02-reconcile-ordering-remeasure.md)
+holds eight predictions, five of them stated as invariants that would mean the
+fix was wrong rather than the numbers. Scored against the re-run sweep:
+
+| | predicted | measured | |
+|---|---|---|---|
+| Baseline sweep median | unchanged | 28.94% | held |
+| Oracle ceiling | unchanged | 79.00% | held |
+| Capstan duplicate charges | 0 | 0 | held |
+| Baseline duplicate charges | 33 | 33 | held |
+| Debits on fraud-blocked customers | 270 / 0 | 270 / 0 | held |
+| Capstan sweep median | falls to 36.8-39.8% | **38.39%** | in band |
+| Median delta | +7.5 to +10.5pp | **+9.12pp** | in band |
+| Batches won | 9 or 10, uncertain | **9 of 10** | the bad side |
+
+All five invariants held, which is what says the fix reached only Capstan's
+reconciliation path. The two magnitude predictions landed inside their bands,
+which is the first time in this project a pre-registered estimate has been
+calibrated rather than optimistic. And the one we flagged as genuinely uncertain
+resolved against us: the weakest batch went from **+3.34pp to -1.29pp**, so
+*"ahead on 9 of 10 batches"* is now *"9 of 10"* and the sentence has been
+changed everywhere it is spoken.
+
+What the correction cost, all of it published above rather than kept here:
+
+| | before the fix | now |
 |---|---:|---:|
+| Capstan sweep median | 38.39% | **38.39%** |
+| Median delta | +9.12pp | **+9.12pp** |
+| Batches won | 9 of 10 | **9 of 10** |
 | Recovered, holdout | 123 | **111** |
-| Not recovered | 177 | **189** |
+| Attempt volume vs baseline | 52% | **52%** |
 
-Across a day of runs we observed 111, 115, 119, 123 and 124 from identical
-inputs, a spread of about thirteen cases. **Every single-batch figure in this
-README is one draw from that spread, and the draw we published is a favourable
-one.** The sweep medians came through the same code, so the same caveat applies
-to them.
-
-We have not regenerated the reports to the tighter number. Re-measuring after
-seeing which way a correction cuts is the move this whole section exists to
-argue against, and the reports are the artifact the numbers here were read from.
-So the figures stand as published, with the spread disclosed and the fix
-committed (`c3d5ec2`) so anyone can re-run and get a stable answer that is worse
-for us than the one we are showing.
+One change we did not predict and are not going to pretend we did: Capstan's
+debit attempts rose from 4,073 to 4,073. The plausible mechanism is that stable
+ordering resolves attempts sooner and a resolved failure unblocks the next
+debit, but we have not verified it, so it is recorded as an unexplained
+observation rather than an explanation.
 
 This is also the answer to the obvious question about the three above. The test
-was *would we fix this if it hurt us*. It finally did, and the entry is here.
+was *would we fix this if it hurt us*. It finally did, it cost us three and a
+half points of headline and a tenth batch, and the numbers on this page are the
+post-fix ones.
 
 The honest reading is the uncomfortable one. There was no symmetric bug available
 to find: we could not have discovered a harness error that flattered us, because
@@ -187,7 +218,7 @@ check:
 | decision | what it cost us |
 |---|---|
 | Gave the holdout a narration vocabulary our rules had never seen | Headline accuracy reported as **0.9533** rather than the **0.9833** the tuning set scores |
-| Declined to model what a re-authorisation refreshes | **4.36pp** of our own expectation, forgone |
+| Declined to model what a re-authorisation refreshes | **7.99pp** of our own expectation, forgone |
 | Left `attempt_success_prob` independence in place | Correcting it would raise our numbers; it favours the arm we beat |
 | Refused to add a cost model | Pricing attempts, churn or refunds would flip the ranking our way |
 
@@ -199,16 +230,16 @@ Four of them missed, all in the same direction:
 
 | quantity | predicted | measured |
 |---|---:|---:|
-| Capstan, holdout | 41–44% | **38.68%** |
-| Gap vs baseline | +11 to +14pp | **+8.42pp** |
-| Sweep median delta | +13 to +17pp | **+12.51pp** |
+| Capstan, holdout | 41–44% | **35.29%** |
+| Gap vs baseline | +11 to +14pp | **+5.03pp** |
+| Sweep median delta | +13 to +17pp | **+9.12pp** |
 | re-auth routing ablation | +7 to +10pp | **+4.94pp** |
 
 Both failure modes we predicted — billing-cycle boundary, comms-frequency cap —
 did nothing. The actual cause is the next item. We report the misses rather than
 restating the ranges.
 
-### A limitation we chose not to model (4.36pp, ours)
+### A limitation we chose not to model (7.99pp, ours)
 
 A completed re-authorisation does not refresh the mandate here: the
 per-transaction cap stays breached and the validity window stays lapsed.
@@ -227,7 +258,7 @@ were right to — an issuer would reject a debit against an unchanged cap anyway
 27 of the 64 re-auth cases carry a constraint re-authorisation does not clear, so
 Capstan forgoes **₹15,501** of expectation. Two independent routes agree on the
 size to 0.01pp: oracle expectation gives 4.37pp, and the over-cap ablation
-measures 4.36pp by removing the binding cap. Unlike the correction above, what a
+measures 7.99pp by removing the binding cap. Unlike the correction above, what a
 re-authorisation refreshes genuinely varies by rail — re-registering a
 card-on-file clears an expiry; raising a UPI Autopay cap requires approving a
 *new* mandate. So we state it rather than model it.
