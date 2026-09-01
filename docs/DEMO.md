@@ -10,6 +10,13 @@ tables; `docs/report_diagnosis_holdout.json` and
 `docs/report_exceptions_holdout.json` carry the rest. If a figure here disagrees
 with the screen, the screen wins and this file is stale.
 
+One figure is deliberately not written down: the Missed count on tab 4. Until
+`c3d5ec2` the reconciliation queue had no total order, so identical runs
+returned results spread over about thirteen cases. It is reproducible now, but
+the reproducible value (189 not recovered) differs from the committed report
+(177), and the reports were deliberately not regenerated. Read that one off the
+screen. README's audit section has the whole story.
+
 ---
 
 ## Pre-flight
@@ -250,7 +257,8 @@ a row with a count. The trail records what we chose not to do."*
 
 **Tab 4.**
 
-> "On this batch — one of the ten — sixty-seven recoverable cases we did not get. They're all here with what went
+> "On this batch — one of the ten — [read the Missed count off the screen]
+> recoverable cases we did not get. They're all here with what went
 > wrong and what a human should do next.
 >
 > They aren't a diagnosis problem — we diagnosed most of them correctly. They're

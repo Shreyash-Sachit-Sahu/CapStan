@@ -25,6 +25,7 @@ arithmetic will get a number that does not reconcile.
 | Capstan | "forty-two percent" | 41.76% |
 | Oracle ceiling | "seventy-nine percent" | 79.00% |
 | At risk, sweep | "thirty-six and a half lakh" | ₹36.47L |
+| Missed, this batch | read it off tab 4 | changes when the batch is re-run |
 | Baseline recovered | "ten point nine lakh" | ₹10.87L |
 | Capstan recovered | "fifteen point two lakh" | ₹15.20L |
 
@@ -144,8 +145,9 @@ Everything else is spoken as written.
 
 **[Tab 4 — exceptions.]**
 
-> On this batch — one of the ten — **sixty-seven** recoverable cases we did not
-> get. They are all here, with what went wrong and what a human should do next.
+> On this batch — one of the ten — **[read the Missed count off the screen]**
+> recoverable cases we did not get. They are all here, with what went wrong and
+> what a human should do next.
 >
 > They are not a diagnosis problem. We diagnosed most of them correctly. They are
 > boundedness. We named the cause, tried the number of times policy permits, and

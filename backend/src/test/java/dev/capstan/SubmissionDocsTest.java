@@ -68,7 +68,7 @@ class SubmissionDocsTest {
                 new String[]{"41.8 lakh", "at-risk figure from the original brief"},
                 new String[]{"G1–G11", "there are twelve guardrails"},
                 new String[]{"double-charged six", "the measured count is 33 across the sweep"},
-                new String[]{"Nineteen recoverable", "the measured miss count is 67"},
+                new String[]{"Nineteen recoverable", "the miss count moves when the batch is re-run; the beat reads it off the screen"},
                 new String[]{"queued retry cancelled",
                         "no cancelled intervention exists in backtest data — Phase 05 §6"});
 

@@ -104,8 +104,8 @@ We fixed it knowing it would help us, on the test *would we fix this if it hurt
 us*. That test is worth nothing unless something backs it, so here is the honest
 accounting — and this correction is not the evidence.
 
-**All three measurement errors we found had been depressing Capstan, not the
-baseline.** Three independent errors pointing the same way are not three
+**Three of the four measurement errors we found had been depressing Capstan,
+not the baseline.** Three independent errors pointing the same way are not three
 coincidences, and they are not evidence of good faith either. They have a
 structural cause, and it is checkable in about thirty lines of
 [`FixedLadderBaseline`](backend/src/main/java/dev/capstan/backtest/FixedLadderBaseline.java).
@@ -123,12 +123,55 @@ can produce a wrong answer belongs almost entirely to one arm:
 | Issuer breaker counting attempts across batches | `recentAttemptsSameReason()`, read only by G11 | ~28pp | it has no guardrails |
 | Re-auth columns surviving the run reset | `reauth_completed_at`, read only by G12 | ~0.7pp | it has no re-authorisation concept |
 
+### The fourth one went the other way (−12 recovered cases, ours)
+
+Everything above was written when three errors had been found and all three had
+run in our favour. A fourth turned up afterwards, and it is the one that pays
+for the test.
+
+`ExecutionStore.dueForReconcile` ordered the reconciliation queue by
+`initiated_at` and applied a `LIMIT`. That is not a total order here: the
+backtest issues debits in bursts at a single virtual instant, so 421 attempts
+land on 195 distinct timestamps with one group of 62 sharing one value. Under a
+`LIMIT`, Postgres broke those ties however the query plan happened to produce
+them, so **three identical runs returned three different results**:
+
+| run | abandoned | escalated | recovered |
+|---|---:|---:|---:|
+| A | 131 | 58 | 111 |
+| B | 127 | 58 | 115 |
+| C | 131 | 58 | 111 |
+
+Ordering by `(initiated_at, id)` makes it reproducible. Four consecutive runs
+now agree. What that costs us is the point:
+
+| | published here | deterministic |
+|---|---:|---:|
+| Recovered, holdout | 123 | **111** |
+| Not recovered | 177 | **189** |
+
+Across a day of runs we observed 111, 115, 119, 123 and 124 from identical
+inputs, a spread of about thirteen cases. **Every single-batch figure in this
+README is one draw from that spread, and the draw we published is a favourable
+one.** The sweep medians came through the same code, so the same caveat applies
+to them.
+
+We have not regenerated the reports to the tighter number. Re-measuring after
+seeing which way a correction cuts is the move this whole section exists to
+argue against, and the reports are the artifact the numbers here were read from.
+So the figures stand as published, with the spread disclosed and the fix
+committed (`c3d5ec2`) so anyone can re-run and get a stable answer that is worse
+for us than the one we are showing.
+
+This is also the answer to the obvious question about the three above. The test
+was *would we fix this if it hurt us*. It finally did, and the entry is here.
+
 The honest reading is the uncomfortable one. There was no symmetric bug available
 to find: we could not have discovered a harness error that flattered us, because
 the arm that would have had to carry it holds almost no state. A one-way error
 distribution is what comparing a stateful system against a stateless one
-predicts, so *"every bug we found ran against us"* is worth very little as
-evidence and we are not going to spend it as though it were.
+predicts, so *"the bugs we found ran against us"* was worth very little as
+evidence even before the fourth one broke the pattern outright.
 
 It does say something else, though, which is worth more than the virtue would
 have been: our lead is concentrated in exactly the machinery that broke. Payday
