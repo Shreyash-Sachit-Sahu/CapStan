@@ -343,7 +343,12 @@ public class ExecutionStore {
                  where state in ('INITIATED', 'UNKNOWN')
                    and reconciled_at is null
                    and (next_reconcile_at is null or next_reconcile_at <= :now)
-                 order by initiated_at
+                 -- initiated_at alone is not a total order. The backtest issues
+                 -- debits in bursts at one virtual instant, so 421 attempts land
+                 -- on 195 timestamps with one group of 62 sharing a single value.
+                 -- Ties under a LIMIT let Postgres pick arbitrarily, which made
+                 -- three identical runs return three different outcomes.
+                 order by initiated_at, id
                  limit :limit
                 """)
                 .param("now", at(now))
