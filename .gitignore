@@ -47,3 +47,6 @@ frontend/next-env.d.ts
 .agents/
 skills-lock.json
 .impeccable/
+
+# Phase briefs are the instructions to the build, not part of the submission
+docs/briefs/
