@@ -142,6 +142,12 @@ td.num, th.num { padding-right: 0; }
   background-color: rgba(18, 22, 28, 0.6);
 }
 
+/* Width, not transform: scaleX, despite the usual advice. Each pawl's 2px
+   border-right is the marker denoting where that arm landed, and a transform
+   scales borders too — it would render ~0.6px at 28.9% and stretch through the
+   animation, distorting the one object the whole identity rests on. Two bars,
+   once, on mount; the layout cost is a rounding error and reduced-motion below
+   turns it off entirely. */
 .pawl { position: absolute; top: -1px; bottom: -1px; left: 0; transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1); }
 .pawl.base { background: rgba(135, 148, 163, 0.16); border-right: 2px solid var(--muted); }
 .pawl.caps { background: rgba(79, 209, 165, 0.14); border-right: 2px solid var(--haul); }

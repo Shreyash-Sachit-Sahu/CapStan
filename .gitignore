@@ -46,3 +46,4 @@ frontend/next-env.d.ts
 # Plugin/skill scaffolding, not part of the submission
 .agents/
 skills-lock.json
+.impeccable/
