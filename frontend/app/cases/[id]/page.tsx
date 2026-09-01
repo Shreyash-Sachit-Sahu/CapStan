@@ -1,6 +1,6 @@
 import CaseTimeline, { type Event } from '@/components/CaseTimeline';
 import AuditChain from '@/components/AuditChain';
-import { get } from '@/lib/api';
+import { BATCH, get } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export default async function CaseView({ params }: { params: Promise<{ id: strin
           was last reset.
         </p>
         <div className="empty" style={{ marginTop: 20 }}>
-          <code>{`curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:0.05'`}</code>
+          <code>{`curl -X POST 'localhost:8080/api/backtest/run?batch=${BATCH}&inject=timeout_rate:0.05'`}</code>
         </div>
       </section>
     );

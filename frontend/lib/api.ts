@@ -3,13 +3,17 @@
 const IST = 'Asia/Kolkata';
 const BASE = process.env.CAPSTAN_API ?? 'http://localhost:8080';
 
+// Which batch the cockpit reads. The name is configuration, not a fact about
+// the data, so it lives in one place instead of being retyped into every fetch.
+export const BATCH = process.env.CAPSTAN_BATCH ?? 'holdout';
+
+// Two curated deep links, so the demo opens the illustrative cases in one click
+// rather than hunting for them on stage. These are pointers, not measurements:
+// the pages they open read every value from the API, and nothing here asserts
+// what those cases contain. Override them when the fixtures are regenerated.
 export const DEMO = {
-  // Money moved, the response was lost, reconciliation resolved it, and exactly
-  // one debit exists. Deep-linked so it opens in one click on stage.
-  timeout: '8fa8b03a-c0d7-4f16-b6a4-72345f949974',
-  // Tier 3 said DO_NOT_HONOUR at confidence 0.80 on a payload with no signal.
-  // The true cause is RISK_BLOCKED. G10 refused the debit anyway: zero debits.
-  riskBlocked: 'a5225e40-474e-4a54-af3e-d35da24dacfa',
+  timeout: process.env.CAPSTAN_CASE_TIMEOUT ?? '8fa8b03a-c0d7-4f16-b6a4-72345f949974',
+  riskBlocked: process.env.CAPSTAN_CASE_RISK ?? 'a5225e40-474e-4a54-af3e-d35da24dacfa',
 };
 
 export async function get<T>(path: string): Promise<T | null> {

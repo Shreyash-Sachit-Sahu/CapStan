@@ -70,9 +70,9 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
       </div>
       {soft && (
         <p className="foot">
-          Hatched bars are below 1pp. One case at the median ticket is 0.34pp of a
-          300-case batch, so those are one-to-two-case effects at the resolution
-          limit. The ten-seed sweep is the better read for anything that small.
+          Hatched bars are below {RESOLUTION_FLOOR_PP}pp, which on a batch this
+          size is a one-to-two-case effect sitting at the resolution limit. The
+          ten-seed sweep is the better read for anything that small.
         </p>
       )}
     </>

@@ -1,4 +1,4 @@
-import { get, human, rupees } from '@/lib/api';
+import { BATCH, get, human, rupees } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +31,7 @@ const GROUPS: [string, string, string][] = [
 ];
 
 export default async function Exceptions() {
-  const body = await get<Body>('/api/backtest/exceptions?batch=holdout');
+  const body = await get<Body>(`/api/backtest/exceptions?batch=${BATCH}`);
 
   if (!body) {
     return (
@@ -39,7 +39,7 @@ export default async function Exceptions() {
         <h1>No exception list</h1>
         <p className="lede">The backend is not reachable, or no run has been measured.</p>
         <div className="empty" style={{ marginTop: 20 }}>
-          <code>curl -X POST &apos;localhost:8080/api/backtest/run?batch=holdout&apos;</code>
+          <code>{`curl -X POST 'localhost:8080/api/backtest/run?batch=${BATCH}'`}</code>
         </div>
       </section>
     );

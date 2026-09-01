@@ -132,15 +132,20 @@ export function CostRow({ baseline, capstan }: { baseline: Arm; capstan: Arm }) 
       <p className="foot">
         This batch only. Both columns are measured and neither is a
         counterfactual. &ldquo;Duplicate charges avoided&rdquo; would be one, so it is
-        not shown. Across the ten-batch sweep the totals are 33 duplicates and
-        270 fraud-blocked debits for the baseline, against 0 and 0.
+        not shown. The sweep totals are in the committed report rather than
+        printed here, because a number typed into a caption stops tracking the
+        run it describes.
       </p>
     </div>
   );
 }
 
 export function TerminalBar({ capstan }: { capstan: Arm }) {
-  const order = ['RECOVERED', 'ESCALATED', 'ABANDONED', 'EXPIRED'];
+  // Known order first, then any status the backend reported that is not in it.
+  // A terminal state this file has never heard of must still appear, not vanish.
+  const known = ['RECOVERED', 'ESCALATED', 'ABANDONED', 'EXPIRED'];
+  const order = [...known,
+    ...Object.keys(capstan.terminalBreakdown).filter((k) => !known.includes(k))];
   const colour: Record<string, string> = {
     RECOVERED: 'var(--haul)', ESCALATED: 'var(--slip)',
     ABANDONED: 'var(--faint)', EXPIRED: 'var(--halt)',
@@ -193,7 +198,11 @@ const GUARDRAILS: Record<string, string> = {
 
 /** The bounded-and-gated evidence, made countable. */
 export function GuardrailTable({ blocks }: { blocks: Record<string, number> }) {
-  const ids = Object.keys(GUARDRAILS);
+  // Same rule as the terminal bar. These labels mirror Guardrails.all() by hand
+  // and have drifted from it once already, so a guardrail the backend fired that
+  // this map does not know renders under its id rather than as a blank row.
+  const ids = [...Object.keys(GUARDRAILS),
+    ...Object.keys(blocks).filter((id) => !(id in GUARDRAILS))];
   const total = ids.reduce((s, id) => s + (blocks[id] ?? 0), 0);
   return (
     <div className="panel">
@@ -206,7 +215,7 @@ export function GuardrailTable({ blocks }: { blocks: Record<string, number> }) {
           {ids.map((id) => (
             <tr key={id}>
               <td className="hash">{id}</td>
-              <td className={blocks[id] ? '' : 'dim'}>{GUARDRAILS[id]}</td>
+              <td className={blocks[id] ? '' : 'dim'}>{GUARDRAILS[id] ?? id}</td>
               <td className={`num ${blocks[id] ? 'halt' : 'dim'}`}>{blocks[id] ?? 0}</td>
             </tr>
           ))}

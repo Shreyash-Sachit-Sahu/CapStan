@@ -1,7 +1,7 @@
 import RatchetScale from '@/components/RatchetScale';
 import AblationWaterfall from '@/components/AblationWaterfall';
 import { CostRow, EqualBudget, GuardrailTable, HeadlineMetrics, TerminalBar } from '@/components/BatchPanels';
-import { DEMO, get, ist, rupees } from '@/lib/api';
+import { BATCH, DEMO, get, ist, rupees } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ type Report = {
 };
 
 export default async function BatchView() {
-  const report = await get<Report>('/api/backtest/report?batch=holdout');
+  const report = await get<Report>(`/api/backtest/report?batch=${BATCH}`);
 
   if (!report || (!report.sweep && !report.run)) {
     return (
@@ -30,10 +30,10 @@ export default async function BatchView() {
           <code>{`docker compose up -d --wait
 cd backend && ./mvnw spring-boot:run
 
-curl -X POST 'localhost:8080/api/admin/batch/load?batch=holdout' \\
-  -H 'Content-Type: application/json' --data-binary @fixtures/batch_holdout.json
-curl -X POST 'localhost:8080/api/backtest/prepare?batch=holdout'
-curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:0.05'`}</code>
+curl -X POST 'localhost:8080/api/admin/batch/load?batch=${BATCH}' \\
+  -H 'Content-Type: application/json' --data-binary @fixtures/batch_${BATCH}.json
+curl -X POST 'localhost:8080/api/backtest/prepare?batch=${BATCH}'
+curl -X POST 'localhost:8080/api/backtest/run?batch=${BATCH}&inject=timeout_rate:0.05'`}</code>
         </div>
       </section>
     );
@@ -90,9 +90,9 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
           </table>
           </div>
           <p className="foot">
-            Ten distinct fixtures, 3,000 cases, median. Every figure below this
-            line is a single batch (<code className="hash">{run?.batch}</code>) and
-            is labelled as such. The two are different measurements.
+            {sweep.batches.length} distinct fixtures, median. Every figure below
+            this line is a single batch (<code className="hash">{run?.batch}</code>)
+            and is labelled as such. The two are different measurements.
           </p>
         </section>
       )}
@@ -134,7 +134,7 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
               </tr>
               <tr>
                 <td><a href={`/cases/${DEMO.riskBlocked}`}>Model confidently wrong, debit refused anyway</a>
-                  <div className="foot">Tier 3 said DO_NOT_HONOUR at 0.80. The truth was RISK_BLOCKED.</div></td>
+                  <div className="foot">The model was confidently wrong. A guardrail refused the debit anyway.</div></td>
                 <td className="num hash">{DEMO.riskBlocked.slice(0, 8)}</td>
               </tr>
             </tbody>
