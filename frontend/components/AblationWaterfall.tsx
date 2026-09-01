@@ -30,10 +30,17 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
           </pattern>
         </defs>
       </svg>
-      <div style={{ width: '100%', height: rows.length * 34 + 26 }}>
+      {/* The 188px category gutter would eat a phone viewport, so the plot keeps a
+          floor width and scrolls. The scroll container is here rather than on the
+          enclosing .panel so containment does not depend on the parent's styling. */}
+      <div style={{ overflowX: 'auto' }}>
+      <div style={{ width: '100%', minWidth: 520, height: rows.length * 34 + 26 }}>
         <ResponsiveContainer>
-          <BarChart data={rows} layout="vertical" margin={{ left: 0, right: 46, top: 4, bottom: 4 }}>
-            <XAxis type="number" hide domain={[Math.min(0, ...rows.map((r) => r.pp)) * 1.15, 'dataMax']} />
+          {/* The right margin has to clear the widest label — "+15.50pp" is ~52px at
+              12px — and 46 clipped it mid-character. The negative end is padded to
+              1.6x so a left-placed label has somewhere to sit that is not the axis. */}
+          <BarChart data={rows} layout="vertical" margin={{ left: 0, right: 68, top: 4, bottom: 4 }}>
+            <XAxis type="number" hide domain={[Math.min(0, ...rows.map((r) => r.pp)) * 1.6, 'dataMax']} />
             <YAxis type="category" dataKey="name" width={188} axisLine={false} tickLine={false}
                    tick={{ fill: '#8794A3', fontSize: 12 }} />
             <Bar dataKey="pp" barSize={15} isAnimationActive={false}>
@@ -42,12 +49,20 @@ export default function AblationWaterfall({ data }: { data: Record<string, numbe
                       fill={r.pp < 0 ? '#E8A33D'
                         : Math.abs(r.pp) < RESOLUTION_FLOOR_PP ? 'url(#lowres)' : '#4FD1A5'} />
               ))}
+              {/* Labels are placed by sign. A negative bar grows leftward, so
+                  Recharts' "right" position puts its label back at the zero line —
+                  directly on top of the category name. Two lists, each blanking the
+                  other's sign, is the fix that keeps both ends outside the bar. */}
               <LabelList dataKey="pp" position="right"
-                         formatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}pp`}
+                         formatter={(v: number) => (v >= 0 ? `+${v.toFixed(2)}pp` : '')}
                          style={{ fill: '#DCE3EA', fontSize: 12, fontVariantNumeric: 'tabular-nums' }} />
+              <LabelList dataKey="pp" position="left"
+                         formatter={(v: number) => (v < 0 ? `${v.toFixed(2)}pp` : '')}
+                         style={{ fill: '#E8A33D', fontSize: 12, fontVariantNumeric: 'tabular-nums' }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      </div>
       </div>
       {soft && (
         <p className="foot">

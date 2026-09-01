@@ -42,3 +42,7 @@ frontend/next-env.d.ts
 
 # Demo pre-flight logs
 .demo-logs/
+
+# Plugin/skill scaffolding, not part of the submission
+.agents/
+skills-lock.json

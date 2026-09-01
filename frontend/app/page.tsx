@@ -62,7 +62,10 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
             capstan={sweep.median.capstan}
             ceiling={sweep.median.upperBound}
           />
-          <table style={{ marginTop: 16 }}>
+          {/* This table sits outside .panel, so it needs its own scroll container
+              or it widens the document on a phone instead of scrolling itself. */}
+          <div className="scrollx" style={{ marginTop: 16 }}>
+          <table>
             <thead>
               <tr>
                 <th>Arm</th><th className="num">Median</th><th className="num">IQR</th>
@@ -80,6 +83,7 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
                 <td className="num slip">{(sweep.iqr.upperBound * 100).toFixed(2)}pp</td></tr>
             </tbody>
           </table>
+          </div>
           <p className="foot">
             Ten distinct fixtures, 3,000 cases, median. Every figure below this
             line is a single batch (<code className="hash">{run?.batch}</code>) and

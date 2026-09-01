@@ -11,11 +11,11 @@
   --line: #2C3540;
   --haul: #4FD1A5;
   --slip: #E8A33D;
-  --halt: #C25B5B;
+  --halt: #D9736F;
 
   --text:  #DCE3EA;
   --muted: #8794A3;
-  --faint: #5C6875;
+  --faint: #808C9A;
 
   --gut: 24px;
   --rule: 1px solid var(--line);
@@ -80,8 +80,30 @@ a { color: inherit; }
 .panel + .panel { margin-top: 18px; }
 .panel > h2 { margin-bottom: 16px; }
 
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+/* Wide content scrolls inside its own panel so the page body never scrolls
+   sideways. Without this the five-column tables crushed their headers into one
+   another (BASELINECAPSTAN) and pushed the document past the viewport at 390px. */
+.panel { overflow-x: auto; min-width: 0; }
+.panel table, .scrollx table { min-width: 460px; }
+.scrollx { overflow-x: auto; min-width: 0; }
+
+/* Grid and flex items default to min-width:auto, which refuses to shrink below
+   the content's min-content size — so the 460px table floor above pushed each
+   panel to 500px and widened the document rather than scrolling inside it. */
+.grid2 > *, .shell > *, section > * { min-width: 0; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 @media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+
+/* Below this width `nav { margin-left: auto }` pushed Exceptions past the right
+   edge before flex-wrap could help, so a primary route became unreachable on a
+   phone. Give the nav its own row instead. */
+@media (max-width: 600px) {
+  :root { --gut: 16px; }
+  .masthead { gap: 8px 18px; padding: 20px 0 14px; margin-bottom: 26px; }
+  .masthead nav { margin-left: 0; width: 100%; gap: 22px; }
+  h1 { font-size: 22px; }
+}
 
 section { margin-bottom: 34px; }
 .lede { color: var(--muted); max-width: 62ch; margin: 8px 0 0; }
@@ -106,10 +128,14 @@ td.num, th.num { padding-right: 0; }
 
 /* Ratchet ----------------------------------------------------------------- */
 
-.ratchet { padding: 30px 20px 22px; border: var(--rule); background: var(--slab); }
+/* The flags are absolutely positioned and nowrap, so on a narrow viewport the
+   rightmost one can extend past the track and widen the whole document. The
+   76px track clearance keeps them inside this box vertically, so containing the
+   horizontal overflow here costs nothing. */
+.ratchet { padding: 30px 20px 22px; border: var(--rule); background: var(--slab); overflow-x: auto; }
 
 .track {
-  position: relative; height: 46px; margin: 40px 0 0;
+  position: relative; height: 46px; margin: 76px 0 0;
   border: var(--rule); border-radius: 1px;
   background-image: repeating-linear-gradient(
     90deg, transparent 0 13px, var(--line) 13px 14px);
@@ -151,7 +177,7 @@ td.num, th.num { padding-right: 0; }
 .tl .why { color: var(--muted); font-size: 12px; margin-top: 3px; }
 
 /* A held action is the system working, so it is greyed and struck, never red. */
-.tl li.held button .what { color: var(--faint); text-decoration: line-through; text-decoration-color: rgba(194, 91, 91, 0.55); }
+.tl li.held button .what { color: var(--faint); text-decoration: line-through; text-decoration-color: rgba(217, 115, 111, 0.6); }
 .tl li.held .why { color: var(--halt); }
 
 .tag {
@@ -159,7 +185,7 @@ td.num, th.num { padding-right: 0; }
   letter-spacing: 0.06em; padding: 1px 5px; border: 1px solid var(--line);
   color: var(--muted); margin-right: 6px; vertical-align: 1px;
 }
-.tag.held { border-color: rgba(194, 91, 91, 0.5); color: var(--halt); }
+.tag.held { border-color: rgba(217, 115, 111, 0.55); color: var(--halt); }
 
 :focus-visible { outline: 2px solid var(--haul); outline-offset: -2px; }
 

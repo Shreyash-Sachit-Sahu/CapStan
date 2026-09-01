@@ -58,11 +58,25 @@ export default async function Exceptions() {
       {GROUPS.map(([key, title, blurb]) => {
         const rows = body.groups[key] ?? [];
         if (!rows.length) return null;
+
+        // The recommended next step is usually identical for every case in a
+        // group — all 67 misses say "no automated action remains". Repeating one
+        // sentence 67 times buries the columns that actually differ (diagnosed
+        // vs. true cause, which guardrail stopped it, amount), so it is hoisted
+        // to the header when it is uniform and kept per-row only when it varies.
+        const steps = new Set(rows.map((e) => e.nextStepForAHuman));
+        const sharedStep = steps.size === 1 ? rows[0].nextStepForAHuman : null;
+
         return (
           <section key={key}>
             <div className="panel">
               <h2>{title} — {body.counts[key]}</h2>
-              <p className="foot" style={{ marginTop: -6, marginBottom: 14 }}>{blurb}</p>
+              <p className="foot" style={{ marginTop: -6, marginBottom: sharedStep ? 4 : 14 }}>{blurb}</p>
+              {sharedStep && (
+                <p className="foot" style={{ marginTop: 0, marginBottom: 14 }}>
+                  <span className="dim">Next step for all {rows.length}:</span> {sharedStep}
+                </p>
+              )}
               <table>
                 <thead>
                   <tr>
@@ -76,7 +90,9 @@ export default async function Exceptions() {
                     <tr key={e.caseId}>
                       <td>
                         <a href={`/cases/${e.caseId}`} className="hash">{e.caseId.slice(0, 8)}</a>
-                        <div className="foot" style={{ margin: 0 }}>{e.nextStepForAHuman}</div>
+                        {!sharedStep && (
+                          <div className="foot" style={{ margin: 0 }}>{e.nextStepForAHuman}</div>
+                        )}
                       </td>
                       <td>{human(e.diagnosedCause)}</td>
                       {key !== 'correctlyAbandoned' && (
