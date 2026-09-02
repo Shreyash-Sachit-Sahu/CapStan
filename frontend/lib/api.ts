@@ -7,12 +7,20 @@ const BASE = process.env.CAPSTAN_API ?? 'http://localhost:8080';
 // the data, so it lives in one place instead of being retyped into every fetch.
 export const BATCH = process.env.CAPSTAN_BATCH ?? 'holdout';
 
+// Re-pointed 2 September. The previous lost-response case took two debits on a
+// standalone run rather than one, because payday inference reads prior
+// successful debits and clearExecutionState wipes them, so a cold run behaves
+// differently from one following others. The pre-flight caught it. This case
+// has the same seven-event shape and holds under a cold run -- and the
+// pre-flight asserts that every time, so if it ever stops holding you find out
+// before you record rather than on stage.
+//
 // Two curated deep links, so the demo opens the illustrative cases in one click
 // rather than hunting for them on stage. These are pointers, not measurements:
 // the pages they open read every value from the API, and nothing here asserts
 // what those cases contain. Override them when the fixtures are regenerated.
 export const DEMO = {
-  timeout: process.env.CAPSTAN_CASE_TIMEOUT ?? '8fa8b03a-c0d7-4f16-b6a4-72345f949974',
+  timeout: process.env.CAPSTAN_CASE_TIMEOUT ?? '41186c3f-e680-4497-9cd9-edde39ce10e9',
   riskBlocked: process.env.CAPSTAN_CASE_RISK ?? 'a5225e40-474e-4a54-af3e-d35da24dacfa',
 };
 

@@ -27,9 +27,17 @@ arithmetic will get a number that does not reconcile.
 | At risk, sweep | "thirty-six and a half lakh" | ₹36.47L |
 | Baseline recovered | "ten point nine lakh" | ₹10.87L |
 | Capstan recovered | "fourteen" | ₹14.04L |
-| Missed, this batch | read it off tab 4 | changes when the batch is re-run |
 
 Everything else is spoken as written.
+
+**Sweep figures are safe to speak; single-batch figures are not.** Every number
+in the table above comes from the ten-batch sweep and reproduces exactly on a
+re-run. The per-case counts on tabs 3 and 4 do not: payday inference derives a
+customer's salary day from prior successful debits, `clearExecutionState` wipes
+`payment_attempt` before every run, so a standalone run starts payday-blind and
+lands lower than one that followed other runs. Read anything on tabs 3 and 4 off
+the screen. The beats below are written so you never have to speak one from
+memory.
 
 ---
 
@@ -147,9 +155,9 @@ Everything else is spoken as written.
 
 **[Point at the greyed, struck-through row.]**
 
-> **G10, risk hold. Zero debits.** Across all nine risk-blocked cases in this
-> batch: zero. The baseline made **twenty-seven**, and **two hundred and
-> seventy** across the sweep.
+> **G10, risk hold. Zero debits.** Every risk-blocked case in this batch: zero.
+> Across the sweep the baseline put **two hundred and seventy** debits on
+> fraud-blocked customers. We put none.
 >
 > The model is fallible and it does not matter, because `PolicyEngine` holds no
 > classifier reference. The model cannot reach a decision path even by accident
@@ -161,8 +169,8 @@ Everything else is spoken as written.
 
 **[Tab 4 — exceptions.]**
 
-> On this batch — one of the ten — **[read the Missed count off the screen]**
-> recoverable cases we did not get. Every one is listed with its diagnosed cause,
+> These are the cases we did not recover on this batch — one of the ten. The
+> count is on your screen; say it. Every one is listed with its diagnosed cause,
 > its true cause, the ladder rung it died on, and the guardrail that stopped it.
 >
 > They are not a diagnosis problem. We diagnosed most of them correctly. They are
@@ -171,9 +179,9 @@ Everything else is spoken as written.
 
 **[Point at the correctly-abandoned and correctly-escalated groups.]**
 
-> These two groups are not failures. On the same batch **sixty-three** were never
-> recoverable by the oracle, and **forty-seven** were routed to a human because
-> no safe automated action remained.
+> These two groups are not failures. The oracle says the first group was never
+> recoverable at all, and the second was routed to a human because no safe
+> automated action remained. Read both counts off the screen.
 >
 > A system that knows when to stop has to be allowed to stop.
 

@@ -130,6 +130,41 @@ can produce a wrong answer belongs almost entirely to one arm:
 | Issuer breaker counting attempts across batches | `recentAttemptsSameReason()`, read only by G11 | ~28pp | it has no guardrails |
 | Re-auth columns surviving the run reset | `reauth_completed_at`, read only by G12 | ~0.7pp | it has no re-authorisation concept |
 
+### Single-batch figures do not reproduce standalone, and here is why
+
+The sweep figures on this page reproduce exactly: re-running the ten batches
+returns 28.94%, 38.39% and 79.00% to the digit. The single-batch holdout figures
+do not, and the gap is large — the committed report holds 35.21% where a
+standalone run returns 23.47%.
+
+The cause is a coupling we did not see until we went looking.
+[`DecisionService`](backend/src/main/java/dev/capstan/policy/DecisionService.java)
+derives a customer's salary day from their own prior successful debits:
+
+```sql
+where rc.mandate_id = c.mandate_id and p.state = 'SUCCEEDED'
+```
+
+and `clearExecutionState` runs `delete from payment_attempt` before every run.
+So every run begins payday-blind and only learns a salary day as debits succeed
+inside it. A run that follows eleven others in the same session inherits nothing
+from them either — but the ablation and equal-budget sequences interleave in a
+way a standalone run does not, and the committed single-batch numbers were
+captured at the end of one of those sequences.
+
+**What this does and does not undermine.** The sweep is ten independent batches
+scored the same way and it reproduces, so the headline comparison stands. The
+ablation attribution for payday timing is measuring something real — within-run
+learning — but its absolute level depends on run history, which means the
+single-batch recovery rate is not a figure anyone should quote back at us
+without re-running it themselves.
+
+We are not fixing this before submission. Changing how a salary day is inferred
+is a policy change, it would move every number on this page again, and doing it
+hours before a deadline without pre-registering the expected direction is
+exactly the move the rest of this section argues against. It is written down
+instead, which is the honest option available.
+
 ### The fourth one went the other way (−3.39pp of headline, ours)
 
 Everything above was written when three errors had been found and all three had

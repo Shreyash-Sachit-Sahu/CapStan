@@ -88,7 +88,7 @@ curl -X POST 'localhost:8080/api/backtest/run?batch=holdout&inject=timeout_rate:
 cd frontend && npm run build && npm run start    # build, then start. Not the other way.
 
 docker compose exec -T postgres psql -U capstan -d capstan -tAc \
-  "select id from audit_event where case_id='8fa8b03a-c0d7-4f16-b6a4-72345f949974' and seq=2;"
+  "select id from audit_event where case_id='41186c3f-e680-4497-9cd9-edde39ce10e9' and seq=2;"
 ```
 
 `-Dspring-boot.run.profiles=demo` is not optional: the tamper endpoint is
@@ -103,7 +103,7 @@ was typed — without the profile there is no handler mapping at all, so it answ
 | # | URL | Beat |
 |---|---|---|
 | 1 | `localhost:3000/` | 0:00 and 0:25 |
-| 2 | `localhost:3000/cases/8fa8b03a-c0d7-4f16-b6a4-72345f949974` | 1:35 — lost response |
+| 2 | `localhost:3000/cases/41186c3f-e680-4497-9cd9-edde39ce10e9` | 1:35 — lost response |
 | 3 | `localhost:3000/cases/a5225e40-474e-4a54-af3e-d35da24dacfa` | 2:25 — model wrong, safe anyway |
 | 4 | `localhost:3000/exceptions` | 3:10 |
 
