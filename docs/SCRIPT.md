@@ -7,8 +7,12 @@ recovery, judge Q&A); this one is just the words, in the order you say them.
 **ALL CHECKS PASSED**. It prints the tamper command with the id already filled
 in — paste that, never retype it.
 
-Target **4:00**. Roughly 600 words at a normal pace. Every figure below is in
-`docs/report_holdout.json` and its two companions.
+**Length: 881 spoken words, about 5:50 at a normal pace.** That is over the
+original four-minute target and the technical detail is why. If you need 4:00,
+cut from 0:30 and 2:25 — they carry the most explanation. Leave 1:35 intact; the
+exactly-once argument is the strongest thing in the run.
+
+Every figure below is in `docs/report_holdout.json` and its two companions.
 
 ---
 
@@ -200,7 +204,7 @@ memory.
 > We gave the holdout a vocabulary our rules had never seen, and our reported
 > accuracy dropped three points. We left a simulator bias in place that would
 > raise our numbers if we corrected it. We declined to model a limitation worth
-> four points of our own expectation. And we refused a cost model that would flip
+> eight points of our own expectation. And we refused a cost model that would flip
 > the ranking our way.
 >
 > The README has the full audit.
