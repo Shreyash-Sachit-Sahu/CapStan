@@ -25,10 +25,9 @@ arithmetic will get a number that does not reconcile.
 | Capstan | "thirty-eight percent" | 38.39% |
 | Oracle ceiling | "seventy-nine percent" | 79.00% |
 | At risk, sweep | "thirty-six and a half lakh" | ₹36.47L |
-| Missed, this batch | read it off tab 4 | changes when the batch is re-run |
 | Baseline recovered | "ten point nine lakh" | ₹10.87L |
-| Capstan recovered | "fourteen lakh" | ₹14.04L |
-| Capstan recovered | "fifteen point two lakh" | ₹14.04L |
+| Capstan recovered | "fourteen" | ₹14.04L |
+| Missed, this batch | read it off tab 4 | changes when the batch is re-run |
 
 Everything else is spoken as written.
 
@@ -38,19 +37,21 @@ Everything else is spoken as written.
 
 **[Tab 1 — cockpit home. The ratchet is on screen. Do not mention the stack.]**
 
-> Three thousand failed mandate debits, across ten independently generated
-> batches. **Thirty-six and a half lakh rupees** at risk.
+> Three thousand failed e-mandate debits, across ten independently seeded
+> fixtures. **Thirty-six and a half lakh rupees** at risk.
 >
-> A standard fixed retry ladder — T plus one, T plus three, T plus five —
-> recovers **ten point nine lakh** of that.
+> A fixed retry ladder — T plus one, T plus three, T plus five, same rail
+> regardless of cause — recovers **ten point nine lakh**.
 >
-> Capstan recovers **fifteen point two**.
+> Capstan recovers **fourteen**.
 >
 > As a share of value at risk: **twenty-nine percent** for the ladder,
-> **thirty-eight** for us. With perfect foresight, the ceiling is
-> **seventy-nine**.
+> **thirty-eight** for us. Both arms scored by the same oracle, through the same
+> simulated gateway, on the same fixtures. With perfect foresight the ceiling is
+> **seventy-nine**, and we publish it, because an accuracy number without a
+> ceiling implies a target that does not exist.
 >
-> We are ahead on nine of the ten batches.
+> We are ahead on nine of the ten.
 
 ---
 
@@ -58,17 +59,19 @@ Everything else is spoken as written.
 
 **[Tab 1 — scroll to the equal-budget table.]**
 
-> But recovery rate is the wrong headline, because the baseline buys it with
-> volume.
+> Recovery rate is the wrong headline, because the baseline buys it with volume
+> and the scoring function prices an attempt at zero.
 >
-> Cap both arms at the same number of debits per case. One attempt each: the
-> baseline gets **eleven percent**. We get **twenty-five**. Two attempts:
-> **twenty-seven** against **thirty-seven**.
+> So cap both arms at the same debits per case. One attempt each: baseline
+> **eleven percent**, us **twenty-two**. Two attempts: **twenty-seven** against
+> **thirty-two**.
 >
-> We win at every budget where the cap actually binds. And across the sweep we
-> use **forty-nine percent** of the baseline's attempt volume.
+> We win at every budget where the cap binds, and across the sweep we spend
+> **fifty-two percent** of the baseline's debit volume.
 >
-> This is a cost-per-recovery argument, not a recovery-rate one.
+> This is a cost-per-recovery argument. We deliberately did not add a cost model
+> — a per-attempt fee, churn, refund handling — because choosing a scoring
+> function after seeing results is unfalsifiable.
 
 ---
 
@@ -76,14 +79,16 @@ Everything else is spoken as written.
 
 **[Tab 1 — scroll to the ablation bars.]**
 
-> We switched each mechanism off in turn, to see what it was worth. One
-> dominates: not retrying before payday. **Fifteen and a half points**.
+> Each mechanism switched off in turn, against the same fixtures. One dominates:
+> not retrying before payday. **Nearly twelve points.**
 >
-> That is more than our entire lead. Turn payday timing off and we recover
-> **twenty-three percent**, against the baseline's **thirty**. We lose.
+> That is more than our entire lead. Ablate payday timing and we recover
+> **twenty-three percent** against the baseline's **thirty**. We lose.
 >
-> The naive ladder retries at T plus one, into an account we already know is
-> empty, and burns an attempt to learn nothing.
+> The naive ladder fires at T plus one into an account it already has evidence is
+> empty, and spends an attempt to learn nothing. Payday is inferred from prior
+> successful debits on the same mandate, and it is the first thing we would
+> replace with a learned per-customer model.
 
 ---
 
@@ -91,29 +96,34 @@ Everything else is spoken as written.
 
 **[Tab 2 — case timeline. Walk down the rows as you speak.]**
 
-> This customer was charged. The gateway took the money, and the response never
+> This customer was charged. The gateway took the money and the response never
 > came back.
 >
-> Debit initiated. Attempt **unknown** — not failed, *unknown*. That is a
-> first-class state here. Most systems collapse unknown into failed and retry,
-> and that is exactly where double charges come from.
+> `DEBIT_INITIATED`. Then `ATTEMPT_UNKNOWN` — not failed, **unknown**. That is a
+> distinct terminal state in our schema, and the distinction is the whole point:
+> `FAILED` is a permission, it authorises the next debit. We have not established
+> that anything failed, so we do not grant it.
 >
-> Reconcile attempted. We asked the gateway what actually happened, keyed by a
-> deterministic idempotency key. It had succeeded. Case recovered. **One debit.**
+> `RECONCILE_ATTEMPTED`. We asked the gateway what actually happened, keyed by an
+> idempotency key derived from case, sequence, rail and amount — deterministic,
+> so the same logical attempt always produces the same key. It had succeeded.
+> Case recovered. **One debit.**
 >
-> That key is a unique constraint in Postgres. A duplicate debit is not a bug we
-> avoided — it is a row that cannot exist. Across the sweep, the baseline
-> double-charged **thirty-three** customers. We charged **zero**.
+> That key is `uq_idem`, a unique constraint on `payment_attempt`. A duplicate
+> debit is not a bug we avoided, it is a row the database will not accept. The
+> debit cap is a second constraint, `uq_case_debit_seq`, so a race cannot exceed
+> it either. Across the sweep the baseline double-charged **thirty-three**
+> customers. We charged **zero**.
 
 **[Scroll to the audit chain. Click Verify. Green.]**
 
-> Every one of those events is hash-chained, and the table is append-only by
-> database trigger.
+> Every event is hash-chained over canonical JSON, and `audit_event` is
+> append-only by database trigger.
 
 **[Run the tamper command from the pre-flight. Click Verify again. Red.]**
 
-> To do that, we had to switch off a database trigger. The chain caught it
-> anyway.
+> To do that we had to disable the trigger, which needs DDL privilege. The chain
+> caught it anyway, and it names the sequence number where the hash breaks.
 
 ---
 
@@ -121,16 +131,19 @@ Everything else is spoken as written.
 
 **[Tab 3 — the misdiagnosed case.]**
 
-> Here is a case our model got wrong. The bank declined without a reason, and the
-> narration said only "FAILED". There is genuinely no signal in that payload.
+> Diagnosis is a cascade. Tier one is a deterministic map over Razorpay's
+> `source:step:reason` triple — seventy-five percent of cases at **one point
+> zero** accuracy. Tier three is a closed-set LLM classifier for the payloads
+> where the bank declined without disclosing a reason.
 >
-> Tier three answered "do not honour", at confidence **zero point eight**. The
-> truth was **risk blocked** — a fraud hold.
+> Here is one it got wrong. Reason `payment_declined`, narration the single word
+> `FAILED`. There is no signal in that payload.
 >
-> "Do not honour" is retryable. That confident wrong answer is a green light to
+> Tier three answered `DO_NOT_HONOUR` at confidence **zero point eight**. The
+> truth was `RISK_BLOCKED` — a fraud hold.
+>
+> `DO_NOT_HONOUR` is retryable. That confident wrong answer is a green light to
 > debit a fraud-blocked customer.
->
-> Look what happened.
 
 **[Point at the greyed, struck-through row.]**
 
@@ -138,8 +151,9 @@ Everything else is spoken as written.
 > batch: zero. The baseline made **twenty-seven**, and **two hundred and
 > seventy** across the sweep.
 >
-> Our model is fallible, and it does not matter. That is the whole design. The
-> model classifies. It never decides.
+> The model is fallible and it does not matter, because `PolicyEngine` holds no
+> classifier reference. The model cannot reach a decision path even by accident
+> — the class has no way to call one. It classifies. It never decides.
 
 ---
 
@@ -148,17 +162,18 @@ Everything else is spoken as written.
 **[Tab 4 — exceptions.]**
 
 > On this batch — one of the ten — **[read the Missed count off the screen]**
-> recoverable cases we did not get. They are all here, with what went wrong and
-> what a human should do next.
+> recoverable cases we did not get. Every one is listed with its diagnosed cause,
+> its true cause, the ladder rung it died on, and the guardrail that stopped it.
 >
 > They are not a diagnosis problem. We diagnosed most of them correctly. They are
-> boundedness. We named the cause, tried the number of times policy permits, and
-> stopped. The baseline does not stop.
+> boundedness — we named the cause, tried the number of times the policy permits,
+> and stopped. The baseline does not stop.
 
 **[Point at the correctly-abandoned and correctly-escalated groups.]**
 
-> And these two groups are not failures. On the same batch, **sixty-three** were
-> never recoverable, and **forty-seven** need a human.
+> These two groups are not failures. On the same batch **sixty-three** were never
+> recoverable by the oracle, and **forty-seven** were routed to a human because
+> no safe automated action remained.
 >
 > A system that knows when to stop has to be allowed to stop.
 
